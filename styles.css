@@ -1,0 +1,141 @@
+.path-admin-tool-behateditor .s-definitions{
+    border-style: solid;
+    border-width: 1px;
+    border-color: #BBB;
+    padding: 0;
+    margin: 0;
+    max-height: 220px;
+    overflow: auto;
+}
+.path-admin-tool-behateditor .s-definitions .step{
+    margin: 0; padding: 5px 2px;
+    border: 1px solid #dddddd;
+}
+.path-admin-tool-behateditor .s-definitions .step:hover {
+    background: yellow;
+}
+.path-admin-tool-behateditor .s-definitions .stepdescription{
+    color:#bf8c12;
+}
+.path-admin-tool-behateditor .s-definitions .steptype{
+    color:#1467a6;
+}
+.path-admin-tool-behateditor .s-definitions .stepregex{
+    color:#060;
+}
+
+.path-admin-tool-behateditor .featureedit {
+    display: none;
+}
+.path-admin-tool-behateditor .featureedit.mode-editor,
+.path-admin-tool-behateditor .featureedit.mode-source {
+    display: block;
+}
+.path-admin-tool-behateditor .featureedit.mode-editor .content-source,
+.path-admin-tool-behateditor .featureedit.mode-source .content-editor {
+    display: none;
+}
+.path-admin-tool-behateditor .featureedit .content {
+    border: 1px solid black;
+    min-height:300px;
+}
+.path-admin-tool-behateditor .featureedit .featuretabs .featuretab {
+    display: inline-block;
+    font-size: 1.2em;
+    padding: 5px;
+    border: 1px solid #888888;
+    background: #DDDDDD;
+}
+.path-admin-tool-behateditor .featureedit.mode-editor .featuretabs .featuretab.tab-editor,
+.path-admin-tool-behateditor .featureedit.mode-source .featuretabs .featuretab.tab-source {
+    font-weight: bold;
+    background: inherit;
+}
+
+.path-admin-tool-behateditor fieldset.collapsible.collapsed .fcontainer {
+    display:none;
+}
+.path-admin-tool-behateditor fieldset.collapsible legend {
+    padding-left: 18px;
+    background: url([[pix:t/expanded]]) left center no-repeat;
+    font-weight:bold;
+}
+.path-admin-tool-behateditor fieldset.collapsed legend {
+    background-image: url([[pix:t/collapsed]]);
+}
+.path-admin-tool-behateditor fieldset.collapsible .fcontainer {
+    padding-left: 18px;
+}
+.path-admin-tool-behateditor .featureedit .content .content-editor .stepsheader {
+    display:none;
+}
+
+
+.path-admin-tool-behateditor .step {
+    padding: 0.25em;
+    color:#060;
+}
+.path-admin-tool-behateditor .step:hover {
+    background: #def;
+}
+.path-admin-tool-behateditor .step .stepcontrols {
+    float: left;
+    padding: 0.25em 1em 0.25em 0.25em; /* top right bottom left */
+}
+.path-admin-tool-behateditor .step .stepcontrols .stepaction {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    color: #888888;
+    border: 1px solid #888888;
+    cursor: pointer;
+    display: inline-block;
+    padding: 0 0.25em 0 0.25em;
+    margin-right: 0.25em;
+}
+
+.path-admin-tool-behateditor .step .stepcontrols .addstep {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    cursor: pointer;
+}
+
+.path-admin-tool-behateditor .step .stepcontrols .deletestep {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    color: red;
+    cursor: pointer;
+}
+
+.path-admin-tool-behateditor .step.stepmode-source .stepeditor {
+    display:none;
+}
+.path-admin-tool-behateditor .step .stepcontrols .stepaction {
+    background: #ddd;
+}
+.path-admin-tool-behateditor .step.stepmode-source .stepcontrols .stepaction-source,
+.path-admin-tool-behateditor .step.stepmode-editor .stepcontrols .stepaction-editor {
+    font-weight: bold;
+    background: inherit;
+}
+.path-admin-tool-behateditor .step.stepmode-editor-failed .stepcontrols .stepaction-editor {
+    color: red;
+}
+.path-admin-tool-behateditor .step.stepmode-editor .stepsource {
+    display:none;
+}
+
+.path-admin-tool-behateditor .steptype {
+    margin-right: 0.5em;
+    padding: 0 0.1em;
+    border: 1px solid #999999;
+    color: #93C9F2;
+}
+.path-admin-tool-behateditor .steptype > span {
+    padding-left: .1em;
+    padding-right: .2em;
+    cursor: pointer
+}
+.path-admin-tool-behateditor .steptype > span.cursteptype {
+    font-weight: bold;
+    color: #1467a6;
+}
