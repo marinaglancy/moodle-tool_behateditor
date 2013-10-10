@@ -43,8 +43,8 @@ if ($action == 'search') {
     $steps = tool_behateditor_helper::get_step_definitions($force);
     echo json_encode((object)array(
         'stepsdefinitions' => convert_to_array($steps),
-        'textselectors' => behat_selectors::get_allowed_text_selectors(),
-        'selectors' => behat_selectors::get_allowed_selectors(),
+        'textselectors' => array_values(behat_selectors::get_allowed_text_selectors()),
+        'selectors' => array_values(behat_selectors::get_allowed_selectors()),
     ));
 } else {
     echo json_encode((object)array('error' => 'Unknown command: '. $action));

@@ -302,9 +302,7 @@ M.tool_behateditor = {
             return;
         }
         if (M.tool_behateditor.stepsdefinitions.get(hash)) {
-            // TODO move to STEP_DEFINITION class.
-            var src = '    ' + M.tool_behateditor.stepsdefinitions.get(hash).steptype + ' ' +
-                    M.tool_behateditor.stepsdefinitions.get(hash).stepregex;
+            var src = M.tool_behateditor.stepsdefinitions.get(hash).get_new_step_text();
             var node = M.tool_behateditor.feature_step_node(src);
             tempnode.get('parentNode').insertBefore(node, tempnode);
             M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: node.one('.stepcontrols .stepaction-editor')});
@@ -387,7 +385,7 @@ M.tool_behateditor = {
             get : function(hash) {
                 return list[hash];
             },
-            /** */
+            /** Seach definitions matching keywords (still server side). */
             search_definitions : function(keywords) {
                 var api = M.tool_behateditor.api;
                 if (!keywords) {
@@ -449,6 +447,58 @@ M.tool_behateditor = {
     },
 
     /**
+     * Trying to determine the argument type by it's name.
+     */
+    get_type_from_param : function(param) {
+        var trimmedparam = param.replace(/^"/, '').replace(/"$/, '');
+        if (trimmedparam.match(/^SELECTOR\d?_STRING$/)) {
+            return 'SELECTOR_STRING';
+        } else if (trimmedparam.match(/^TEXT_SELECTOR\d?_STRING$/)) {
+            return 'TEXT_SELECTOR_STRING';
+        } else if (trimmedparam.match(/_STRING$/)) {
+            return 'STRING';
+        } else if (trimmedparam.match(/_NUMBER$/)) {
+            return 'NUMBER';
+        }
+        return 'UNKNOWN';
+    },
+
+    /**
+     * Trying to determine the argument regex by it's name.
+     */
+    get_regex_from_param : function(param) {
+        var paramtype = M.tool_behateditor.get_type_from_param(param),
+                regex = '((?:[^"]|\\\\")*)';
+        if (paramtype === 'SELECTOR_STRING') {
+            regex = '('+M.tool_behateditor.selectors.join('|')+')'
+        } else if (paramtype === 'TEXT_SELECTOR_STRING') {
+            regex = '('+M.tool_behateditor.textselectors.join('|')+')'
+        } else if (paramtype === 'NUMBER') {
+            regex = '([\\d]+)';
+        }
+        return regex;
+    },
+
+    /**
+     * Returns the default value for param that actually matches get_regex_from_param.
+     */
+    get_defaultvalue_from_param : function(param) {
+        var paramtype = M.tool_behateditor.get_type_from_param(param);
+        if (paramtype === 'SELECTOR_STRING') {
+            return M.tool_behateditor.selectors[0]
+        } else if (paramtype === 'TEXT_SELECTOR_STRING') {
+            return M.tool_behateditor.textselectors[0]
+        } else if (paramtype === 'NUMBER') {
+            return 1;
+        }
+        var regex = M.tool_behateditor.get_regex_from_param(param)
+        if (param.match(new RegExp('^'+regex+'$',''))) {
+            return param;
+        }
+        return '';
+    },
+
+    /**
      * Returns object representing one step definition.
      *
      * @param String hash
@@ -479,58 +529,57 @@ M.tool_behateditor = {
                 var lines = str.replace(/[\s\n]+$/,'').replace(/^\n+/,'').split(/\n/);
                 var firstline = lines[0].trim();
                 var regex = this.stepregex;
-                regex = '^(Given|When|Then|And) '+regex.replace(/"[A-Z][A-Z|0-9|_]*"/g, '"((?:[^"]|\\\\")*)"')+'$';  
+                regex = '^(Given|When|Then|And) '+regex.replace(/"([A-Z][A-Z|0-9|_]*)"/g,
+                        function(str,match) { return '"'+M.tool_behateditor.get_regex_from_param(match)+'"'; })+'$';
                 var matches = firstline.match(new RegExp(regex, ''));
                 if (matches !== null) {
                     matches.shift(); // First element is the whole string, we don't need it.
                 }
                 return matches;
             },
+            get_new_step_text : function() {
+                return '    ' + this.steptype + ' ' +
+                        this.stepregex.replace(/"([A-Z][A-Z|0-9|_]*)"/g,
+                        function(str,match) { return '"'+M.tool_behateditor.get_defaultvalue_from_param(match)+'"'; });
+                // TODO multiline
+            },
             get_editing_template : function(src) {
-                var values = this.match_step(src);
-                values.shift(); // shift away the steptype.
-                var steptext = this.stepregex;
-                steptext = steptext.replace(/"([A-Z][A-Z|0-9|_]*)"/g, '"<span data-param="$1" data-type="UNKNOWN"></span>"');
-
+                var steptext = this.stepregex.
+                        replace(/"([A-Z][A-Z|0-9|_]*)"/g, '"<span data-param="$1" data-type="UNKNOWN"></span>"');
                 var stepregexnode = Y.Node.create('<span class="stepregex"></span>');
                 stepregexnode.append(steptext);
                 stepregexnode.all('span').each(function(el){
-                    var value = values.shift();
-                    var param = el.getAttribute('data-param').replace(/^"/,'').replace(/"$/,'');
-                    if (param.match(/^SELECTOR\d?_STRING$/)) {
-                        el.setAttribute('data-type', 'SELECTOR_STRING');
-                        el.append('<select size="1" ></select>');
-                        for (var i in M.tool_behateditor.selectors) {
-                            var o = M.tool_behateditor.selectors[i];
-                            if (o === value) {
-                                el.one('select').append('<option value="'+o+'" selected>'+o+'</option>');
-                            } else {
-                                el.one('select').append('<option value="'+o+'">'+o+'</option>');
-                            }
-                        }
-                    } else if (param.match(/^TEXT_SELECTOR\d?_STRING$/)) {
-                        el.setAttribute('data-type', 'TEXT_SELECTOR_STRING');
-                        el.append('<select size="1" ></select>');
-                        for (var i in M.tool_behateditor.textselectors) {
-                            var o = M.tool_behateditor.textselectors[i];
-                            if (o === value) {
-                                el.one('select').append('<option value="'+o+'" selected>'+o+'</option>');
-                            } else {
-                                el.one('select').append('<option value="'+o+'">'+o+'</option>');
-                            }
-                        }
-                    } else if (param.match(/_NUMBER$/)) {
-                        el.setAttribute('data-type', 'NUMBER');
-                        el.append('<input type="text" size="5" />');
-                        el.one('input').setAttribute('value', value);
-                    } else {
-                        if (el.getAttribute('data-param').match(/_STRING$/)) {
-                            el.setAttribute('data-type', 'STRING');
-                        }
-                        el.append('<input type="text" size="20" />');
-                        el.one('input').setAttribute('value', value);
-                    }
+                    el.setAttribute('data-type', M.tool_behateditor.get_type_from_param(el.getAttribute('data-param')));
                 });
+
+                // TODO this might not need to be here.
+                stepregexnode.all('span[data-type="SELECTOR_STRING"]').each(function(el){
+                    el.append('<select size="1"></select>');
+                    Y.Array.each(M.tool_behateditor.selectors, function(o){
+                        el.one('select').append('<option value="'+o+'">'+o+'</option>');
+                    });
+                });
+                stepregexnode.all('span[data-type="TEXT_SELECTOR_STRING"]').each(function(el){
+                    el.append('<select size="1"></select>');
+                    Y.Array.each(M.tool_behateditor.textselectors, function(o){
+                        el.one('select').append('<option value="'+o+'">'+o+'</option>');
+                    });
+                });
+                stepregexnode.all('span[data-type="NUMBER"]').each(function(el){
+                    el.append('<input type="text" size="5" />');
+                });
+                stepregexnode.all('span[data-type="STRING"],span[data-type="UNKNOWN"]').each(function(el){
+                    el.append('<input type="text" size="20" />');
+                });
+
+
+                var values = this.match_step(src);
+                values.shift(); // shift away the steptype.
+                stepregexnode.all('span').each(function(el){
+                    var value = values.shift();
+                    el.one('select,input').set('value', value);
+                });
+
                 return stepregexnode;
             }
     /*,
