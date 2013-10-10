@@ -32,7 +32,7 @@ $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('admin');
 
 $api = new moodle_url('/admin/tool/behateditor/ajax.php');
-$PAGE->requires->js_init_call('M.tool_behateditor.init', array($api->out()), true);
+$PAGE->requires->yui_module('moodle-tool_behateditor-editor', 'M.tool_behateditor.init', array($api->out()), null, true);
 echo $OUTPUT->header();
 
 ?>
