@@ -84,7 +84,7 @@ M.tool_behateditor = {
                 keywords = searchword.get('value');
         if (!keywords) {
             var hashes = [];
-            for (var key in M.tool_behateditor.stepsdefinitions) {
+            for (var key in M.tool_behateditor.stepsdefinitions.list) {
                 hashes.push(key);
             }
             M.tool_behateditor.display_search_results(hashes);
@@ -201,7 +201,7 @@ M.tool_behateditor = {
                 target = stepel.one('.stepsource textarea'),
                 hash = src.getAttribute('data-hash'),
                 steptype = src.one('.steptype .iscurrent').getAttribute('data-steptype');
-        var str = M.tool_behateditor.stepsdefinitions[hash]['stepregex'];
+        var str = M.tool_behateditor.stepsdefinitions.get(hash).stepregex;
         str = str.replace(/"([A-Z][A-Z|0-9|_]*)"/g, function(fullstring) {
             return '"' + src.one('span[data-param='+fullstring+'] input,span[data-param='+fullstring+'] select').get('value') + '"';
         });
@@ -229,8 +229,8 @@ M.tool_behateditor = {
         firstword = firstword[1];
         firstline = firstline.replace(/^\w+ /,'');
     //console.log('matching ['+firstline+']');
-        for (i in M.tool_behateditor.stepsdefinitions) {
-            regex = M.tool_behateditor.stepsdefinitions[i]['stepregex'];
+        for (i in M.tool_behateditor.stepsdefinitions.list) {
+            regex = M.tool_behateditor.stepsdefinitions.get(i).stepregex;
             regex = '^'+regex.replace(/"[A-Z][A-Z|0-9|_]*"/g, '"((?:[^"]|\\\\")*)"')+'$';
             var matches = firstline.match(new RegExp(regex, ''));
             if (matches) {
@@ -250,7 +250,7 @@ M.tool_behateditor = {
             console.log('Can not parse step: No matching definition found');
             return false;
         }
-        step = M.tool_behateditor.stepsdefinitions[hash];
+        step = M.tool_behateditor.stepsdefinitions.get(hash);
 
         var str = step['stepregex'];
     //console.log(foundmatches)
@@ -396,9 +396,9 @@ M.tool_behateditor = {
             console.log('Add step target is lost');
             return;
         }
-        if (M.tool_behateditor.stepsdefinitions[hash]) {
-            var src = '    ' + M.tool_behateditor.stepsdefinitions[hash]['steptype'] + ' ' +
-                    M.tool_behateditor.stepsdefinitions[hash]['stepregex'];
+        if (M.tool_behateditor.stepsdefinitions.get(hash)) {
+            var src = '    ' + M.tool_behateditor.stepsdefinitions.get(hash).steptype + ' ' +
+                    M.tool_behateditor.stepsdefinitions.get(hash).stepregex;
             var node = M.tool_behateditor.feature_step_node(src);
             tempnode.get('parentNode').insertBefore(node, tempnode);
             M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: node.one('.stepcontrols .stepaction-editor')});
@@ -439,11 +439,11 @@ M.tool_behateditor = {
         container.setContent('');
         container.addClass('empty');
         for (i in hashes) {
-            step = M.tool_behateditor.stepsdefinitions[hashes[i]];
+            step = M.tool_behateditor.stepsdefinitions.get(hashes[i]);
             container.append('<div class="step" data-hash="'+hashes[i]+
-                    '"><div class="stepdescription">'+step['stepdescription']+
-                    '</div><div class="stepcontent"><span class="steptype">'+step['steptype']+
-                    ' </span><span class="stepregex">'+step['stepregex']+'</span></div></div>');
+                    '"><div class="stepdescription">'+step.stepdescription+
+                    '</div><div class="stepcontent"><span class="steptype">'+step.steptype+
+                    ' </span><span class="stepregex">'+step.stepregex+'</span></div></div>');
             container.removeClass('empty');
         }
     },
@@ -455,7 +455,8 @@ M.tool_behateditor = {
             on: {
                 complete: function(id, o, p) {
                     data = Y.JSON.parse(o.responseText);
-                    M.tool_behateditor.stepsdefinitions = data.stepsdefinitions;
+                    M.tool_behateditor.stepsdefinitions =
+                            M.tool_behateditor.step_definitions_list(data.stepsdefinitions);
                     M.tool_behateditor.textselectors = data.textselectors;
                     M.tool_behateditor.selectors = data.selectors;
                     M.tool_behateditor.refresh_search_results();
@@ -466,6 +467,51 @@ M.tool_behateditor = {
                 force : force
             }
         });
+    },
+
+    /**
+     * Returns object representing list of step definitions.
+     *
+     * @param String hash
+     * @param Array data
+     * @returns Object
+     */
+    step_definitions_list : function(stepsdefinitions) {
+        var list = {}, hash;
+        for (hash in stepsdefinitions) {
+            list[hash] = M.tool_behateditor.step_definition(hash, stepsdefinitions[hash]);
+        }
+        return {
+            list : list,
+            get : function(hash) {
+                return list[hash];
+            }
+        };
+    },
+
+    /**
+     * Returns object representing one step definition.
+     *
+     * @param String hash
+     * @param Array data
+     * @returns Object
+     */
+    step_definition : function(hash, data) {
+        return {
+            hash : hash,
+            stepregex : data.stepregex,
+            steptype : data.steptype,
+            stepdescription : data.stepdescription
+    /*,
+            from_editor_to_sourcecode : function(editor) {
+                var str = this.stepregex;
+                steptype = src.one('.steptype .iscurrent').getAttribute('data-steptype')
+                str = str.replace(/"([A-Z][A-Z|0-9|_]*)"/g, function(fullstring) {
+                    return '"' + editor.one('span[data-param='+fullstring+'] input,span[data-param='+fullstring+'] select').get('value') + '"';
+                });
+            }*/
+
+        };
     }
 
 };
