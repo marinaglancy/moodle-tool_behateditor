@@ -23,14 +23,20 @@
 
 YUI.add('moodle-tool_behateditor-editor', function (Y) {
 
-M.tool_behateditor = M.tool_behateditor || {api: null};
+M.tool_behateditor = {
 
-M.tool_behateditor.stepsdefinitions = M.tool_behateditor.stepsdefinitions || {};
-M.tool_behateditor.textselectors = M.tool_behateditor.textselectors || {};
-M.tool_behateditor.selectors = M.tool_behateditor.selectors || {};
-M.tool_behateditor.search_dlg = M.tool_behateditor.search_dlg || null;
+/** @var string URL for AJAX requests */
+api : null,
 
-M.tool_behateditor.init = function(api) {
+stepsdefinitions : {},
+
+textselectors : {},
+
+selectors : {},
+
+search_dlg : null,
+
+init : function(api) {
     M.tool_behateditor.api = api;
     M.tool_behateditor.load_steps_definitions(0);
     Y.one('#behateditor_searchform').on('submit', function(e) {e.preventDefault();});
@@ -70,9 +76,9 @@ M.tool_behateditor.init = function(api) {
     Y.one('#behateditor_searchoutput').delegate(
         'click', M.tool_behateditor.click_searchoutput_step,
         '.step');
-};
+},
 
-M.tool_behateditor.refresh_search_results = function() {
+refresh_search_results : function() {
     var api = M.tool_behateditor.api,
             searchword = Y.one('#behateditor_searchword'),
             keywords = searchword.get('value');
@@ -97,9 +103,9 @@ M.tool_behateditor.refresh_search_results = function() {
             }
         });
     }
-};
+},
 
-M.tool_behateditor.click_feature_editor_tab = function(e) {
+click_feature_editor_tab : function(e) {
     var container = Y.one('#behateditor_featureedit .featureedit'),
             newmode;
     if (e.currentTarget.hasClass('tab-editor')) {
@@ -123,9 +129,9 @@ M.tool_behateditor.click_feature_editor_tab = function(e) {
     }
     container.removeClass('mode-loading');
     container.addClass(newmode);
-};
+},
 
-M.tool_behateditor.convert_from_source_to_editor = function() {
+convert_from_source_to_editor : function() {
     var source = Y.one('#behateditor_featuresource').get('value'),
             chunks = source.trim().split(/\n[\t\s]*\n/), i, chunkheader, fieldset, chunkcontents,
             targetdiv = Y.one('#behateditor_featureedit .content .content-editor'),
@@ -174,9 +180,9 @@ M.tool_behateditor.convert_from_source_to_editor = function() {
     targetdiv.all('.step .stepcontrols .stepaction-editor').each(function(el) {
         M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: el});
     });
-};
+},
 
-M.tool_behateditor.convert_from_editor_to_source = function() {
+convert_from_editor_to_source : function() {
     var sourcecode = Y.one('#behateditor_featuresource');
     Y.all('#behateditor_featureedit .content .content-editor .step.stepmode-editor').
             each(function(stepel){
@@ -186,11 +192,10 @@ M.tool_behateditor.convert_from_editor_to_source = function() {
     Y.all('#behateditor_featureedit .content .content-editor textarea').each(function(el) {
         str += el.get('value').replace(/[ \n]+$/, '') + "\n";
     });
-    console.log(str);
     sourcecode.set('value', str);
-};
+},
 
-M.tool_behateditor.make_step_definition = function(stepel) {
+make_step_definition : function(stepel) {
     var src = stepel.one('.stepeditor'),
             target = stepel.one('.stepsource textarea'),
             hash = src.getAttribute('data-hash'),
@@ -200,9 +205,9 @@ M.tool_behateditor.make_step_definition = function(stepel) {
         return '"' + src.one('span[data-param='+fullstring+'] input,span[data-param='+fullstring+'] select').get('value') + '"';
     });
     target.set('value', '    '+steptype+' '+str);
-};
+},
 
-M.tool_behateditor.parse_step_definition = function(stepel) {
+parse_step_definition : function(stepel) {
     var src = stepel.one('.stepsource textarea').get('value').replace(/[\s\n]+$/,'').replace(/^\n+/,''),
             lines = src.split(/\n/), firstline, hash = '', firstword, step, regex, foundmatches;
     if (!lines.length) {
@@ -301,9 +306,9 @@ M.tool_behateditor.parse_step_definition = function(stepel) {
     editor.append(steptype);
     editor.append(stepregex);
     return true;
-};
+},
 
-M.tool_behateditor.click_feature_editor_steptype = function(e) {
+click_feature_editor_steptype : function(e) {
     var steptypeel = e.currentTarget.ancestor('.steptype'),
             newtype = e.currentTarget.getAttribute('data-steptype');
     steptypeel.all('span').removeClass('cursteptype');
@@ -312,9 +317,9 @@ M.tool_behateditor.click_feature_editor_steptype = function(e) {
     });
     e.currentTarget.setContent(newtype);
     e.currentTarget.addClass('cursteptype');
-};
+},
 
-M.tool_behateditor.click_feature_editor_stepcontrol = function(e) {
+click_feature_editor_stepcontrol : function(e) {
     var stepel = e.currentTarget.ancestor('.step'), newclass;
     if (e.currentTarget.hasClass('stepaction-source')) {
         newclass = 'stepmode-source';
@@ -338,23 +343,23 @@ M.tool_behateditor.click_feature_editor_stepcontrol = function(e) {
     stepel.removeClass('stepmode-editor');
     stepel.removeClass('stepmode-editor-failed');
     stepel.addClass(newclass);
-};
+},
 
-M.tool_behateditor.click_feature_editor_deletestep = function(e) {
+click_feature_editor_deletestep : function(e) {
     var node, step = e.currentTarget.ancestor('.step');
     step.remove();
-};
+},
 
-M.tool_behateditor.click_feature_editor_addstep = function(e) {
+click_feature_editor_addstep : function(e) {
     var insertbeforestep = e.currentTarget.ancestor('.step');
     // Remove existing temp node.
     Y.all('#behateditor_featureedit .content-editor .tempaddstep').remove();
     var tempnode = Y.Node.create('<div class="tempaddstep"></div>');
     insertbeforestep.get('parentNode').insertBefore(tempnode, insertbeforestep);
     M.tool_behateditor.open_addstep_dialogue();
-};
+},
 
-M.tool_behateditor.open_addstep_dialogue = function() {
+open_addstep_dialogue : function() {
     Y.one('#behateditor_searchform').removeClass('hiddenifjs');
 
     if (!M.tool_behateditor.search_dlg) {
@@ -380,9 +385,9 @@ M.tool_behateditor.open_addstep_dialogue = function() {
         [Y.WidgetPositionAlign.TL, Y.WidgetPositionAlign.BL]);
     Y.one('#behateditor_searchword').focus();
     Y.one('#behateditor_searchword').select();
-};
+},
 
-M.tool_behateditor.close_addstep_dialogue = function(hash) {
+close_addstep_dialogue : function(hash) {
     var tempnode = Y.one('#behateditor_featureedit .content-editor .tempaddstep');
     if (M.tool_behateditor.search_dlg) {
         M.tool_behateditor.search_dlg.hide();
@@ -399,14 +404,14 @@ M.tool_behateditor.close_addstep_dialogue = function(hash) {
         M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: node.one('.stepcontrols .stepaction-editor')});
     }
     tempnode.remove();
-};
+},
 
-M.tool_behateditor.click_searchoutput_step = function(e) {
+click_searchoutput_step : function(e) {
     var hash = e.currentTarget.getAttribute('data-hash').replace(/"/g,'');
     M.tool_behateditor.close_addstep_dialogue(hash);
-}
+},
 
-M.tool_behateditor.feature_step_node = function(src, lastnode) {
+feature_step_node : function(src, lastnode) {
     var node;
     if (lastnode) {
         node = Y.Node.create('<div class="step laststep clearfix"></div>');
@@ -426,9 +431,9 @@ M.tool_behateditor.feature_step_node = function(src, lastnode) {
         node.append('<div class="stepeditor"></div>');
     }
     return node;
-};
+},
 
-M.tool_behateditor.display_search_results = function(hashes) {
+display_search_results : function(hashes) {
     var i, step,
             container = Y.one('#behateditor_searchoutput');
     container.setContent('');
@@ -441,9 +446,9 @@ M.tool_behateditor.display_search_results = function(hashes) {
                 ' </span><span class="stepregex">'+step['stepregex']+'</span></div></div>');
         container.removeClass('empty');
     }
-};
+},
 
-M.tool_behateditor.load_steps_definitions = function(force) {
+load_steps_definitions : function(force) {
     var api = M.tool_behateditor.api;
     Y.io(api,{
         method: 'GET',
@@ -461,7 +466,8 @@ M.tool_behateditor.load_steps_definitions = function(force) {
             force : force
         }
     });
-};
+}
 
+};
 
 }, '@VERSION@', { requires: ['base', 'io-base', 'node', 'event-delegate', 'json-parse', 'overlay'] });
