@@ -142,12 +142,12 @@ M.tool_behateditor = {
             chunkcontents = Y.Node.create('<div class="fcontainer clearfix"></div>');
             if (i > 0) {
                 // To create an empty line between chunks on re-parsing.
-                chunkcontents.append('<div class="stepsheader"><textarea></textarea></div>');
+                chunkcontents.append('<div class="hiddenifjs"><textarea></textarea></div>');
             }
             lines = chunks[i].replace(/\s+\n/g,"\n").replace(/^\n+/,'').replace('/\n+$/','').split(/\n/);
             if (lines.length > 0 && (lines[0].match(/^  Background:/) || lines[0].match(/^  Scenario:/))) {
                 chunkheader = lines.shift();
-                chunkcontents.append('<div class="stepsheader"><textarea rows="1" cols="60">'+chunkheader+'</textarea></div>');
+                chunkcontents.append('<div class="hiddenifjs"><textarea rows="1" cols="60">'+chunkheader+'</textarea></div>');
                 steps = [];
                 while (lines.length > 0) {
                     nextline = lines.shift();
@@ -171,7 +171,8 @@ M.tool_behateditor = {
                     fieldset.addClass('featureheader');
                 }
                 fieldset.addClass('collapsed');
-                chunkcontents.append('<textarea rows="'+chunks[i].split(/\n/).length+'" cols="60">'+chunks[i]+'</textarea>');
+                chunkcontents.append('<textarea rows="'+chunks[i].split(/\n/).length+'" cols="60">'+
+                        chunks[i].replace('<', '&lt;')+'</textarea>');
             }
             fieldset.append('<legend class="ftoggler">'+chunkheader+'</legend>');
             fieldset.append(chunkcontents);
@@ -199,7 +200,7 @@ M.tool_behateditor = {
         var src = stepel.one('.stepeditor'),
                 target = stepel.one('.stepsource textarea'),
                 hash = src.getAttribute('data-hash'),
-                steptype = src.one('.steptype .cursteptype').getAttribute('data-steptype');
+                steptype = src.one('.steptype .iscurrent').getAttribute('data-steptype');
         var str = M.tool_behateditor.stepsdefinitions[hash]['stepregex'];
         str = str.replace(/"([A-Z][A-Z|0-9|_]*)"/g, function(fullstring) {
             return '"' + src.one('span[data-param='+fullstring+'] input,span[data-param='+fullstring+'] select').get('value') + '"';
@@ -302,7 +303,6 @@ M.tool_behateditor = {
         Y.Array.each(['Given', 'When', 'Then', 'And'],
             function(n) {steptype.append('<span data-steptype="'+n+'"></span>');});
         M.tool_behateditor.click_feature_editor_steptype({currentTarget: steptype.one('[data-steptype='+firstword+']')});
-        //steptype.addClass('cursteptype-'+firstword);
         editor.append(steptype);
         editor.append(stepregex);
         return true;
@@ -311,12 +311,12 @@ M.tool_behateditor = {
     click_feature_editor_steptype : function(e) {
         var steptypeel = e.currentTarget.ancestor('.steptype'),
                 newtype = e.currentTarget.getAttribute('data-steptype');
-        steptypeel.all('span').removeClass('cursteptype');
+        steptypeel.all('span').removeClass('iscurrent');
         steptypeel.all('span').each(function(el) {
             el.setContent(el.getAttribute('data-steptype').substr(0,1));
         });
         e.currentTarget.setContent(newtype);
-        e.currentTarget.addClass('cursteptype');
+        e.currentTarget.addClass('iscurrent');
     },
 
     click_feature_editor_stepcontrol : function(e) {
@@ -470,4 +470,4 @@ M.tool_behateditor = {
 
 };
 
-}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'event-delegate', 'json-parse', 'overlay'] });
+}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'event-delegate', 'json-parse', 'overlay'] });

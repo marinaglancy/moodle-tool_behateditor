@@ -1,3 +1,53 @@
+/*
+
+form#behateditor_featureedit
+    div.featureedit[.mode-source|.mode-editor|.mode-loading]
+        div.featuretabs
+            div.featuretab.tab-editor
+            div.featuretab.tab-source
+        div.content
+            div.content-editor
+                fieldset.collapsible[.featureheader|.featuresteps|.unrecognised]
+                    div.legend.ftoggler
+                    div.fcontainer
+                        div.step[.stepmode-editor|.stepmode-source[.stepmode-editor-failed]]
+                            div.stepcontrols
+                                span.addstep
+                                span.deletestep
+                                span.stepaction.stepaction-editor // TODO data-
+                                span.stepaction.stepaction-editor
+                            div.stepsource
+                                textarea
+                            div.stepeditor data-hash="XXX"
+                                span.steptype
+                                    span[.iscurrent] data-steptype="XXX"
+                                span.stepregex
+                                    -text-
+                                    span data-type="STRING|NUMBER|UNKNOWN" data-param="XXX"
+                                        input type="text"
+                                    -text-
+                                    span data-type="[TEXT_]SELECTOR_STRING" data-param="XXX"
+                                        select
+                        div.step.laststep
+                            div.stepcontrols
+                                span.addstep
+            div.content-source
+                textarea#behateditor_featuresource
+
+
+form#behateditor_searchform
+    input#behateditor_searchword
+    div#behateditor_searchoutput.s-definitions[.empty]
+        div.step data-hash="XXX"
+            div.stepdescription
+            div.stepcontent
+                span.steptype
+                span.stepregex
+
+
+
+
+*/
 .path-admin-tool-behateditor .s-definitions{
     border-style: solid;
     border-width: 1px;
@@ -66,10 +116,6 @@
 .path-admin-tool-behateditor fieldset.collapsible .fcontainer {
     padding-left: 18px;
 }
-.path-admin-tool-behateditor .featureedit .content .content-editor .stepsheader {
-    display:none;
-}
-
 
 .path-admin-tool-behateditor .step {
     padding: 0.25em;
@@ -135,7 +181,7 @@
     padding-right: .2em;
     cursor: pointer
 }
-.path-admin-tool-behateditor .steptype > span.cursteptype {
+.path-admin-tool-behateditor .steptype > span.iscurrent {
     font-weight: bold;
     color: #1467a6;
 }
