@@ -290,8 +290,16 @@ M.tool_behateditor = {
             var node = M.tool_behateditor.feature_step_node(src);
             tempnode.get('parentNode').insertBefore(node, tempnode);
             M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: node.one('.stepcontrols .stepaction-editor')});
+            M.tool_behateditor.mark_node_as_just_added(node);
         }
         tempnode.remove();
+    },
+
+    mark_node_as_just_added : function(node) {
+        var nodeid = node.generateID();
+        node.addClass('justadded');
+        // Remove highlighting after 5 seconds.
+        Y.later(5000,this,function(id){Y.all('#'+id).removeClass('justadded');},[nodeid]);
     },
 
     click_searchoutput_step : function(e) {

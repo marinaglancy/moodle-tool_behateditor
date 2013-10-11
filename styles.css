@@ -10,7 +10,7 @@ form#behateditor_featureedit
                 fieldset.collapsible[.featureheader|.featuresteps|.unrecognised]
                     div.legend.ftoggler
                     div.fcontainer
-                        div.step[.stepmode-editor|.stepmode-source[.stepmode-editor-failed]]
+                        div.step[.stepmode-editor|.stepmode-source[.stepmode-editor-failed]][.justadded]
                             div.stepcontrols
                                 span.addstep
                                 span.deletestep
@@ -120,6 +120,9 @@ form#behateditor_searchform
 .path-admin-tool-behateditor .step {
     padding: 0.25em;
     color:#060;
+}
+.path-admin-tool-behateditor .step.justadded {
+    background: #D1FFCC;
 }
 .path-admin-tool-behateditor .step:hover {
     background: #def;
