@@ -98,7 +98,7 @@ class tool_behateditor_helper {
      *
      * @return string[]
      */
-    public static function get_keywords() {
+    /*public static function get_keywords() {
         $cache = cache::make('tool_behateditor', 'stepdef');
         if (($keywords = $cache->get('keywords')) !== false) {
             return $keywords;
@@ -112,13 +112,13 @@ class tool_behateditor_helper {
         sort($keywords, SORT_STRING);
         $cache->set('keywords', $keywords);
         return $keywords;
-    }
+    }*/
 
     /**
      *
      * @return tool_behateditor_step_definition[]
      */
-    public static function search_step_definitions($searchstring) {
+    /*public static function search_step_definitions($searchstring) {
         $searchstring = trim(strtolower($searchstring));
         if (empty($searchstring)) {
             return self::get_step_definitions();
@@ -139,13 +139,13 @@ class tool_behateditor_helper {
             $steps[$hash] = $step;
         }
         return $steps;
-    }
+    }*/
 
     /**
      *
      * @return array where both key and value is the step definition hash
      */
-    protected static function get_step_hashes_with_keyword($keyword, $exactmatch = false) {
+    /*protected static function get_step_hashes_with_keyword($keyword, $exactmatch = false) {
         $allkeywords = self::get_keywords();
         if ($exactmatch) {
             if (!in_array($keyword, $allkeywords)) {
@@ -172,7 +172,7 @@ class tool_behateditor_helper {
             }
         }
         return $hashes;
-    }
+    }*/
 
     public static function get_feature_files() {
         global $CFG;

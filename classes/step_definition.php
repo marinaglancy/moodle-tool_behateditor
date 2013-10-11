@@ -70,12 +70,12 @@ class tool_behateditor_step_definition implements cacheable_object, IteratorAggr
         $expr = preg_replace('/"[A-Z][A-Z|0-9|_]*"/', ' ', $this->stepregex);
         $normalized .= ' ' . preg_replace('/[\.,!\?;:\-\+\'"\\/\(\)\#|]/', ' ', $this->stepdescription.' '.$expr);
         $keywords = array_unique(preg_split('/\s+/', strtolower($normalized), -1, PREG_SPLIT_NO_EMPTY));
-        $keywords = array_filter($keywords, create_function('$a', 'return strlen($a) > 2;'));
+        sort($keywords);
         $this->keywords = array_values($keywords);
         return $this->keywords;
     }
 
-    public function has_keyword($needle, $exactmatch = false) {
+    /*public function has_keyword($needle, $exactmatch = false) {
         if ($exactmatch) {
             return in_array($needle, $this->get_keywords());
         } else {
@@ -87,7 +87,7 @@ class tool_behateditor_step_definition implements cacheable_object, IteratorAggr
             }
         }
         return false;
-    }
+    }*/
 
     public function prepare_to_cache() {
         return array(
@@ -107,7 +107,8 @@ class tool_behateditor_step_definition implements cacheable_object, IteratorAggr
             'component' => $this->component,
             'stepdescription' => $this->stepdescription,
             'steptype' => $this->steptype,
-            'stepregex' => $this->stepregex
+            'stepregex' => $this->stepregex,
+            'keywords' => $this->get_keywords()
         )
         );
     }

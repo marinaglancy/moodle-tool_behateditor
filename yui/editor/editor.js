@@ -42,7 +42,7 @@ M.tool_behateditor = {
         Y.one('#behateditor_searchform').on('submit', function(e) {e.preventDefault();});
         var searchword = Y.one('#behateditor_searchword');
         searchword.on('change', M.tool_behateditor.refresh_search_results);
-        searchword.on('keydown', M.tool_behateditor.refresh_search_results);
+        searchword.on('keyup', M.tool_behateditor.refresh_search_results);
         Y.all('#behateditor_featureedit .featureedit .featuretab').on(
             'click', M.tool_behateditor.click_feature_editor_tab);
         Y.one('#behateditor_featureedit .content-editor').delegate(
@@ -429,6 +429,8 @@ var STEP_DEFINITIONS_LIST = function() {
 
 STEP_DEFINITIONS_LIST.prototype = {
     list : {},
+    keywords : [],
+    hashes : [],
     /**
      * Called during the initialisation process of the object.
      * @method initializer
@@ -437,35 +439,34 @@ STEP_DEFINITIONS_LIST.prototype = {
         for (var hash in stepsdefinitions) {
             stepsdefinitions[hash]['hash'] = hash;
             this.list[hash] = new STEP_DEFINITION(stepsdefinitions[hash]);
+            this.keywords = this.keywords.concat(this.list[hash].keywords)
+            this.hashes.push(hash);
         }
+        this.keywords = Y.Array.unique(this.keywords);
     },
     get : function(hash) {
         return this.list[hash];
     },
+    _get_matching_keywords : function(searchstring) {
+        var words = searchstring.trim().split(/ +/), keywords = [];
+        Y.Array.each(words, function(w) {
+            var wordkeywords = Y.Array.filter(this.keywords, function(k){return k.substring(0, w.length) === w;});
+            keywords.push(wordkeywords);
+        }, this);
+        return keywords;
+    },
     /** Seach definitions matching keywords (still server side). */
-    search_definitions : function(keywords) {
-        var api = M.tool_behateditor.api;
-        if (!keywords) {
-            var hashes = [];
-            for (var key in this.list) {
-                hashes.push(key);
+    search_definitions : function(searchstring) {
+        searchstring = searchstring.replace(/[\.,!\?;:\-\+\'"\\/\(\)\#|]/g,' ').trim()
+        var hashes = this.hashes;
+        if (searchstring.length) {
+            var allkeywords = this._get_matching_keywords(searchstring);
+            while (allkeywords.length && hashes.length) {
+                var wordkeywords = allkeywords.shift();
+                hashes = Y.Array.filter(hashes, function(h) {return this.get(h).has_any_keyword(wordkeywords);}, this);
             }
-            M.tool_behateditor.display_search_results(hashes);
-        } else {
-            Y.io(api,{
-                method: 'POST',
-                on: {
-                    complete: function(id, o, p) {
-                        data = Y.JSON.parse(o.responseText);
-                        M.tool_behateditor.display_search_results(data.hashes);
-                    }
-                },
-                data: {
-                    action : 'search',
-                    keyword : keywords
-                }
-            });
         }
+        M.tool_behateditor.display_search_results(hashes);
     },
     /** Being given a string step tries to find a matching definition */
     find_matching_definition : function(text) {
@@ -518,6 +519,7 @@ STEP_DEFINITION.prototype = {
     stepregex : null,
     steptype : null,
     stepdescription : null,
+    keywords : [],
     /**
      * Called during the initialisation process of the object.
      * @method initializer
@@ -527,6 +529,7 @@ STEP_DEFINITION.prototype = {
         this.stepregex = data['stepregex'];
         this.steptype = data['steptype'];
         this.stepdescription = data['stepdescription'];
+        this.keywords = data['keywords'];
     },
     /**
      * Returns HTML to display the definition in the search resutls.
@@ -537,6 +540,14 @@ STEP_DEFINITION.prototype = {
             '"><div class="stepdescription">'+this.stepdescription+
             '</div><div class="stepcontent"><span class="steptype">'+this.steptype+
             ' </span><span class="stepregex">'+this.stepregex+'</span></div></div>');
+    },
+    has_any_keyword : function(keywords) {
+        for (var k in keywords) {
+            if (Y.Array.indexOf(this.keywords, keywords[k]) >= 0) {
+                return true;
+            }
+        }
+        return false;
     },
     /**
      * Matches the real step wording to the current definition and returns array of matches or false if matching failed.
@@ -641,4 +652,4 @@ Y.extend(STEP_DEFINITION, Y.Base, STEP_DEFINITION.prototype, {
     NAME : 'moodle-tool_behateditor-stepdefinition'
 });
 
-}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'event-custom', 'event-delegate', 'json-parse', 'overlay'] });
+}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'array-extras', 'json-parse', 'overlay'] });
