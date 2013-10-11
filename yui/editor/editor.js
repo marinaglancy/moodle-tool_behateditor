@@ -123,10 +123,19 @@ M.tool_behateditor = {
                 // To create an empty line between chunks on re-parsing.
                 chunkcontents.append('<div class="hiddenifjs"><textarea></textarea></div>');
             }
-            lines = chunks[i].replace(/\s+\n/g,"\n").replace(/^\n+/,'').replace('/\n+$/','').split(/\n/);
-            if (lines.length > 0 && (lines[0].match(/^  Background:/) || lines[0].match(/^  Scenario:/))) {
+            var lines = chunks[i].replace(/\s+\n/g,"\n").replace(/^\n+/,'').replace('/\n+$/','').split(/\n/);
+            if ((lines.length > 0 && lines[0].match(/^  (Background|Scenario):/)) ||
+                    (lines.length > 1 && lines[0].match(/^  \@/) && lines[1].match(/^  (Background|Scenario):/))) {
+                var jsprefix = '';
+                if (lines[0].match(/^  \@/)) {
+                    jsprefix = lines.shift();
+                    chunkcontents.append('<div class="hiddenifjs"><textarea>'+jsprefix+'</textarea></div>');
+                }
                 chunkheader = lines.shift();
-                chunkcontents.append('<div class="hiddenifjs"><textarea rows="1" cols="60">'+chunkheader+'</textarea></div>');
+                chunkcontents.append('<div class="hiddenifjs"><textarea>'+chunkheader+'</textarea></div>');
+                if (jsprefix !== '') {
+                    chunkheader = '<span class="jsprefix">'+jsprefix.trim()+'</span> ' + chunkheader;
+                }
                 steps = [];
                 while (lines.length > 0) {
                     nextline = lines.shift();
@@ -562,11 +571,15 @@ STEP_DEFINITION.prototype = {
         var regex = this.stepregex;
         regex = '^(Given|When|Then|And) '+regex.replace(/"([A-Z][A-Z|0-9|_]*)"/g,
                 function(str,match) { return '"'+M.tool_behateditor.get_regex_from_param(match)+'"'; })+'$';
-        var matches = firstline.match(new RegExp(regex, ''));
-        if (matches !== null) {
-            matches.shift(); // First element is the whole string, we don't need it.
+        try {
+            var matches = firstline.match(new RegExp(regex, ''));
+            if (matches !== null) {
+                matches.shift(); // First element is the whole string, we don't need it.
+            }
+            return matches;
+        } catch(e) {
+            return null;
         }
-        return matches;
     },
     get_new_step_text : function() {
         return '    ' + this.steptype + ' ' +

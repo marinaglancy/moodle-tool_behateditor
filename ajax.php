@@ -33,11 +33,12 @@ $PAGE->set_context(context_system::instance());
 echo $OUTPUT->header();
 
 $action = optional_param('action', null, PARAM_ALPHA);
-if ($action == 'search') {
+/*if ($action == 'search') {
     $keyword = optional_param('keyword', null, PARAM_RAW_TRIMMED);
     $steps = tool_behateditor_helper::search_step_definitions($keyword);
     echo json_encode((object)array('keyword' => $keyword, 'hashes' => array_keys($steps)));
-} else if ($action == 'stepsdef') {
+} else */
+if ($action == 'stepsdef') {
     require_once($CFG->libdir . '/behat/classes/behat_selectors.php');
     $force = optional_param('force', false, PARAM_BOOL);
     $steps = tool_behateditor_helper::get_step_definitions($force);

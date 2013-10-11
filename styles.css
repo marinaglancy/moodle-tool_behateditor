@@ -8,7 +8,7 @@ form#behateditor_featureedit
         div.content
             div.content-editor
                 fieldset.collapsible[.featureheader|.featuresteps|.unrecognised]
-                    div.legend.ftoggler
+                    div.legend.ftoggler (may contain span.jsprefix)
                     div.fcontainer
                         div.step[.stepmode-editor|.stepmode-source[.stepmode-editor-failed]][.justadded]
                             div.stepcontrols
@@ -112,6 +112,10 @@ form#behateditor_searchform
 }
 .path-admin-tool-behateditor fieldset.collapsed legend {
     background-image: url([[pix:t/collapsed]]);
+}
+.path-admin-tool-behateditor fieldset legend .jsprefix {
+    color: #888;
+    font-weight: normal;
 }
 .path-admin-tool-behateditor fieldset.collapsible .fcontainer {
     padding-left: 18px;
