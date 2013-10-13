@@ -205,13 +205,13 @@ M.tool_behateditor = {
         // TODO instead of switching to source tab convert to source if we are in editor mode.
         M.tool_behateditor.click_feature_editor_tab(
                 {currentTarget: Y.one('#behateditor_featureedit .featuretabs .tab-source')});
-        return Y.one('#behateditor_featureedit .content-source textarea').getContent()
+        return Y.one('#behateditor_featureedit .content-source textarea').get('value')
     },
 
     set_feature_contents : function(text, filepath, featurecanbesaved) {
         M.tool_behateditor.click_feature_editor_tab(
                 {currentTarget: Y.one('#behateditor_featureedit .featuretabs .tab-source')});
-        Y.one('#behateditor_featureedit .content-source textarea').setContent(text);
+        Y.one('#behateditor_featureedit .content-source textarea').set('value', text);
         Y.one('#behateditor_featureedit .fileactions .filepath').setContent(filepath);
         Y.one('#behateditor_featureedit .controls input[data-action=save]').
                 set('value', filepath ? 'Save' : 'Save as');
@@ -339,7 +339,7 @@ M.tool_behateditor = {
                         if (data.features) {
                             // Refresh features list.
                             M.tool_behateditor.featurefiles = data.features;
-                            Y.all('#behateditor_fileslist .file textarea').setContent('');
+                            Y.all('#behateditor_fileslist .file textarea').set('value', '');
                             Y.all('#behateditor_fileslist .file[data-loaded=1]').setAttribute('data-loaded', 0);
                         }
                         M.tool_behateditor.set_feature_contents(contents, filepath, false);
@@ -390,7 +390,7 @@ M.tool_behateditor = {
                             filename = Y.one('#behateditor_filesaveasform input[name=filename]'),
                             filepath = component.get('value')+'/tests/behat/'+filename.get('value')+'.feature';
                     M.tool_behateditor.save_file(M.tool_behateditor.get_feature_contents(), filepath,
-                        M.tool_behateditor.saveas_dlg.hide);
+                        function(){M.tool_behateditor.saveas_dlg.hide();});
                 });
         }
         M.tool_behateditor.saveas_dlg.show();
@@ -428,7 +428,7 @@ M.tool_behateditor = {
                     complete: function(id, o, p) {
                         data = Y.JSON.parse(o.responseText);
                         filenode.setAttribute('loaded', '1');
-                        textarea.setContent(data.filecontents);
+                        textarea.set('value', data.filecontents);
                         processaction(action, data.filecontents);
                     }
                 },
@@ -438,7 +438,7 @@ M.tool_behateditor = {
                 }
             });
         } else {
-            processaction(action, textarea.getContent());
+            processaction(action, textarea.get('value'));
         }
     },
 
