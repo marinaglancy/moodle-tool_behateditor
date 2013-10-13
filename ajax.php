@@ -47,6 +47,44 @@ if ($action == 'stepsdef') {
         'textselectors' => array_values(behat_selectors::get_allowed_text_selectors()),
         'selectors' => array_values(behat_selectors::get_allowed_selectors()),
     ));
+} else if ($action == 'features') {
+    $features = tool_behateditor_helper::get_feature_files();
+    echo json_encode((object)array(
+        'features' => convert_to_array($features),
+    ));
+} else if ($action == 'filecontents') {
+    $filepath = required_param('filepath', PARAM_PATH);
+    echo json_encode((object)array(
+        'filecontents' => file_get_contents($CFG->dirroot.'/'.$filepath),
+    ));
+} else if ($action == 'savefile') {
+    $filepath = required_param('filepath', PARAM_PATH);
+    $filecontents = required_param('filecontents', PARAM_RAW);
+    $filepath = $CFG->dirroot.'/'.$filepath;
+    $clue = null;
+    if (!file_exists($filepath)) {
+        if (!file_exists(dirname($filepath))) {
+            $clue = 'mkdir -m 777 -p '.dirname($filepath);
+        } else if (!is_writable(dirname($filepath))) {
+            $clue = 'chmod 777 '.dirname($filepath);
+        }
+    } else if (!is_writable($filepath)) {
+        if (file_exists($filepath)) {
+            $clue = 'chmod 666 '.$filepath;
+        } else if (file_exists(dirname($filepath))) {
+            $clue = 'chmod 777 '.dirname($filepath);
+        } else {
+            $clue = 'mkdir -m 777 -p '.dirname($filepath);
+        }
+    }
+    if ($clue !== null) {
+        echo json_encode((object)array('error' => 'Can not write to file. You may want to execute:'."<br><br><b>".$clue.'</b>'));
+    } else {
+        file_put_contents($filepath, $filecontents);
+        $features = tool_behateditor_helper::get_feature_files(true);
+        echo json_encode((object)array('status' => 'ok',
+            'features' => convert_to_array($features)));
+    }
 } else {
     echo json_encode((object)array('error' => 'Unknown command: '. $action));
 }

@@ -38,9 +38,18 @@ echo $OUTPUT->header();
 ?>
 <form action="#" method="POST" id="behateditor_featureedit">
     <div class="featureedit mode-source">
-        <div class="featuretabs">
-            <div class="featuretab tab-editor">Feature editor</div>
-            <div class="featuretab tab-source">Feature source</div>
+        <div class="topheader">
+            <div class="featuretabs">
+                <input type="button" class="featuretab tab-editor" data-action="editor" value="Feature editor"/>
+                <input type="button" class="featuretab tab-source" data-action="source" value="Feature source"/>
+            </div>
+            <div class="fileactions">
+                <div class="controls hiddenifjs">
+                    <input type="button" data-action="files" value="Feature files">
+                    <input type="button" data-action="save" value="Save">
+                    <span class="filepath"></span>
+                </div>
+            </div>
         </div>
         <div class="content">
             <div class="content-editor"></div>
@@ -50,9 +59,18 @@ echo $OUTPUT->header();
         </div>
     </div>
 </form>
-<form action="#" method="POST" id="behateditor_searchform" class="hiddenifjs">
+<div style="display:none">
+<form action="#" method="POST" id="behateditor_searchform">
     <input name="keyword" type="text" id="behateditor_searchword">
     <div id="behateditor_searchoutput" class="s-definitions"></div>
 </form>
+<form action="#" method="POST" id="behateditor_fileselectform">
+    <div id="behateditor_fileslist" class="featurefileslist"></div>
+</form>
+<form action="#" method="POST" id="behateditor_filesaveasform">
+    <div><input type="text" name="component"/>/tests/behat/<input type="text" name="filename"/>.feature</div>
+    <div><input type="button" value="Save"/></div>
+</form>
+</div>
 <?php
 echo $OUTPUT->footer();

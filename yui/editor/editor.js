@@ -30,15 +30,23 @@ M.tool_behateditor = {
 
     stepsdefinitions : {},
 
+    featurefiles : {},
+
     textselectors : {},
 
     selectors : {},
 
     search_dlg : null,
 
+    files_dlg : null,
+
+    saveas_dlg : null,
+
     init : function(api) {
         M.tool_behateditor.api = api;
+        M.tool_behateditor.stepsdefinitions = new STEP_DEFINITIONS_LIST({});
         M.tool_behateditor.load_steps_definitions(0);
+        M.tool_behateditor.load_feature_files(0);
         Y.one('#behateditor_searchform').on('submit', function(e) {e.preventDefault();});
         var searchword = Y.one('#behateditor_searchword');
         searchword.on('change', M.tool_behateditor.refresh_search_results);
@@ -76,6 +84,13 @@ M.tool_behateditor = {
         Y.one('#behateditor_searchoutput').delegate(
             'click', M.tool_behateditor.click_searchoutput_step,
             '.step');
+        // File actions (files, save).
+        Y.all('#behateditor_featureedit .controls input').on(
+                'click', M.tool_behateditor.click_file_control, this);
+        // Select a file from the files list.
+        Y.one('#behateditor_fileslist').delegate(
+            'click', M.tool_behateditor.click_file,
+            '.file input[type=button]');
     },
 
     refresh_search_results : function() {
@@ -186,6 +201,27 @@ M.tool_behateditor = {
         sourcecode.set('value', str);
     },
 
+    get_feature_contents : function() {
+        // TODO instead of switching to source tab convert to source if we are in editor mode.
+        M.tool_behateditor.click_feature_editor_tab(
+                {currentTarget: Y.one('#behateditor_featureedit .featuretabs .tab-source')});
+        return Y.one('#behateditor_featureedit .content-source textarea').getContent()
+    },
+
+    set_feature_contents : function(text, filepath, featurecanbesaved) {
+        M.tool_behateditor.click_feature_editor_tab(
+                {currentTarget: Y.one('#behateditor_featureedit .featuretabs .tab-source')});
+        Y.one('#behateditor_featureedit .content-source textarea').setContent(text);
+        Y.one('#behateditor_featureedit .fileactions .filepath').setContent(filepath);
+        Y.one('#behateditor_featureedit .controls input[data-action=save]').
+                set('value', filepath ? 'Save' : 'Save as');
+        M.tool_behateditor.set_feature_can_be_saved(featurecanbesaved);
+    },
+
+    set_feature_can_be_saved : function(featurecanbesaved) {
+        // TODO
+    },
+
     make_step_definition : function(stepel) {
         var editornode = stepel.one('.stepeditor'),
                 sourcecodenode = stepel.one('.stepsource textarea'),
@@ -257,9 +293,156 @@ M.tool_behateditor = {
         M.tool_behateditor.open_addstep_dialogue();
     },
 
-    open_addstep_dialogue : function() {
-        Y.one('#behateditor_searchform').removeClass('hiddenifjs');
+    open_files_dialogue : function(action) {
+        if (!M.tool_behateditor.files_dlg) {
+            node = Y.Node.create('<div class="filesdialogue" id=></div>');
+            M.tool_behateditor.files_dlg = new M.core.dialogue({
+                draggable    : true,
+                bodyContent  : Y.one('#behateditor_fileselectform'),
+                headerContent: 'Feature files', // TODO dynamic
+                width        : '700px',
+                height       : '500px',
+                modal        : true,
+                visible      : false
+            });
+        }
+        M.tool_behateditor.files_dlg.show();
+        var listnode = Y.one('#behateditor_fileslist');
+        listnode.setContent('');
+        for (var i in M.tool_behateditor.featurefiles) {
+            listnode.append('<div class="file" data-hash="'+i+'" data-loaded="0"><div>'+
+                    M.tool_behateditor.featurefiles[i].filepath.replace('/tests/behat/','/...../').
+                    replace(/\/([^\/]*)\.feature/, '/<b>$1</b>.feature')+
+                    '<input type="button" data-action="edit" value="Edit">'+
+                    '<input type="button" data-action="import" value="Import">'+
+                    '<input type="button" data-action="preview" value="Preview"><div>'+
+                    '<div class="preview hiddenifjs"><textarea rows="6" cols="80"></textarea></div>'+
+                    '</div>');
+        }
+    },
 
+    save_file : function(contents, filepath, successcallback) {
+        var api = M.tool_behateditor.api;
+        Y.io(api,{
+            method: 'POST',
+            on: {
+                complete: function(id, o, p) {
+                    data = Y.JSON.parse(o.responseText);
+                    if (data.error !== undefined) {
+                        error = new M.core.alert({
+                            title:'Error',
+                            message:data.error,
+                            lightbox:true});
+                        error.show();
+                        // TODO error callback
+                    } else {
+                        if (data.features) {
+                            // Refresh features list.
+                            M.tool_behateditor.featurefiles = data.features;
+                            Y.all('#behateditor_fileslist .file textarea').setContent('');
+                            Y.all('#behateditor_fileslist .file[data-loaded=1]').setAttribute('data-loaded', 0);
+                        }
+                        M.tool_behateditor.set_feature_contents(contents, filepath, false);
+                        if (successcallback) {
+                            successcallback();
+                        }
+                    }
+                }
+            },
+            data: {
+                action : 'savefile',
+                filepath : filepath,
+                filecontents : contents
+            }
+        });
+    },
+
+    click_file_control : function(e) {
+        var action = e.currentTarget.getAttribute('data-action');
+        if (action === 'files') {
+            M.tool_behateditor.open_files_dialogue(action);
+        } else if (action === 'save') {
+            var filepath = Y.one('#behateditor_featureedit .fileactions .filepath').getContent();
+            if (filepath) {
+                var api = M.tool_behateditor.api,
+                        contents = M.tool_behateditor.get_feature_contents();
+                M.tool_behateditor.save_file(contents, filepath);
+            } else {
+                M.tool_behateditor.open_saveas_dialogue();
+            }
+        }
+    },
+
+    open_saveas_dialogue : function() {
+        if (!M.tool_behateditor.saveas_dlg) {
+            M.tool_behateditor.saveas_dlg = new M.core.dialogue({
+                draggable    : true,
+                bodyContent  : Y.one('#behateditor_filesaveasform'),
+                headerContent: 'Save as',
+                width        : '700px',
+                height       : '300px',
+                modal        : true,
+                visible      : false
+            });
+            Y.one('#behateditor_filesaveasform input[type=button]').on('click',
+                function(e) {
+                    var component = Y.one('#behateditor_filesaveasform input[name=component]'),
+                            filename = Y.one('#behateditor_filesaveasform input[name=filename]'),
+                            filepath = component.get('value')+'/tests/behat/'+filename.get('value')+'.feature';
+                    M.tool_behateditor.save_file(M.tool_behateditor.get_feature_contents(), filepath,
+                        M.tool_behateditor.saveas_dlg.hide);
+                });
+        }
+        M.tool_behateditor.saveas_dlg.show();
+        Y.all('#behateditor_filesaveasform input[type=text]').set('value', '');
+    },
+
+    click_file : function(e) {
+        var action = e.currentTarget.getAttribute('data-action'),
+                filenode = e.currentTarget.ancestor('.file'),
+                hash = filenode.getAttribute('data-hash'),
+                loadstatus = filenode.getAttribute('data-loaded'),
+                textarea = filenode.one('textarea'),
+                processaction = function(action, text) {
+                    if (action === 'edit') {
+                        M.tool_behateditor.set_feature_contents(text,
+                            M.tool_behateditor.featurefiles[hash].filepath, false);
+                        M.tool_behateditor.files_dlg.hide();
+                    } else if (action === 'import') {
+                        M.tool_behateditor.set_feature_contents(text,
+                            '', true);
+                        M.tool_behateditor.files_dlg.hide();
+                    } else if (action === 'preview') {
+                        if (filenode.one('.preview').hasClass('hiddenifjs')) {
+                            filenode.one('.preview').removeClass('hiddenifjs');
+                        } else {
+                            filenode.one('.preview').addClass('hiddenifjs');
+                        }
+                    }
+                };
+        if (loadstatus === '0') {
+            var api = M.tool_behateditor.api;
+            Y.io(api,{
+                method: 'GET',
+                on: {
+                    complete: function(id, o, p) {
+                        data = Y.JSON.parse(o.responseText);
+                        filenode.setAttribute('loaded', '1');
+                        textarea.setContent(data.filecontents);
+                        processaction(action, data.filecontents);
+                    }
+                },
+                data: {
+                    action : 'filecontents',
+                    filepath : M.tool_behateditor.featurefiles[hash].filepath
+                }
+            });
+        } else {
+            processaction(action, textarea.getContent());
+        }
+    },
+
+    open_addstep_dialogue : function() {
         if (!M.tool_behateditor.search_dlg) {
             M.tool_behateditor.search_dlg = new M.core.dialogue({
                 draggable    : true,
@@ -364,6 +547,24 @@ M.tool_behateditor = {
             },
             data: {
                 action : 'stepsdef',
+                force : force
+            }
+        });
+    },
+
+    load_feature_files : function(force) {
+        var api = M.tool_behateditor.api;
+        Y.io(api,{
+            method: 'GET',
+            on: {
+                complete: function(id, o, p) {
+                    data = Y.JSON.parse(o.responseText);
+                    M.tool_behateditor.featurefiles = data.features;
+                    Y.all('#behateditor_featureedit .fileactions .controls.hiddenifjs').removeClass('hiddenifjs');
+                }
+            },
+            data: {
+                action : 'features',
                 force : force
             }
         });
@@ -665,4 +866,4 @@ Y.extend(STEP_DEFINITION, Y.Base, STEP_DEFINITION.prototype, {
     NAME : 'moodle-tool_behateditor-stepdefinition'
 });
 
-}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'array-extras', 'json-parse', 'overlay'] });
+}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'array-extras', 'json-parse', 'overlay', 'moodle-core-notification'] });

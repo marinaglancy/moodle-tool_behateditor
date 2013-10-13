@@ -174,7 +174,7 @@ class tool_behateditor_helper {
         return $hashes;
     }*/
 
-    public static function get_feature_files() {
+    public static function get_feature_files($force = false) {
         global $CFG;
         require_once($CFG->libdir . '/testing/classes/tests_finder.php');
         $componentpaths = tests_finder::get_components_with_tests('features');

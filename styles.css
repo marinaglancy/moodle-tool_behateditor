@@ -90,16 +90,20 @@ form#behateditor_searchform
     min-height:300px;
 }
 .path-admin-tool-behateditor .featureedit .featuretabs .featuretab {
-    display: inline-block;
     font-size: 1.2em;
     padding: 5px;
     border: 1px solid #888888;
     background: #DDDDDD;
 }
+/* TODO should be iscurrent */
 .path-admin-tool-behateditor .featureedit.mode-editor .featuretabs .featuretab.tab-editor,
 .path-admin-tool-behateditor .featureedit.mode-source .featuretabs .featuretab.tab-source {
     font-weight: bold;
     background: inherit;
+}
+.path-admin-tool-behateditor .featureedit .featuretabs,
+.path-admin-tool-behateditor .featureedit .fileactions {
+    display: inline-block;
 }
 
 .path-admin-tool-behateditor fieldset.collapsible.collapsed .fcontainer {
@@ -191,4 +195,13 @@ form#behateditor_searchform
 .path-admin-tool-behateditor .steptype > span.iscurrent {
     font-weight: bold;
     color: #1467a6;
+}
+
+.path-admin-tool-behateditor .featurefileslist {
+    max-height: 420px;
+    overflow: auto;
+}
+
+.path-admin-tool-behateditor .featurefileslist .file:hover {
+    background: yellow;
 }

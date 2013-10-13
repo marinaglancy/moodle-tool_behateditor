@@ -34,19 +34,22 @@ defined('MOODLE_INTERNAL') || die();
 class tool_behateditor_feature implements cacheable_object, IteratorAggregate {
     var $component;
     var $filepath;
+    var $fullpath;
     private $hash = null;
 
     public function __construct($component, $path, $subpath = null) {
         global $CFG;
         $this->component = $component;
         if (empty($subpath)) {
-            $this->filepath = $path;
+            $this->fullpath = $path;
         } else {
-            $this->filepath = rtrim($path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$subpath;
+            $this->fullpath = rtrim($path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$subpath;
         }
         $prefix = $CFG->dirroot.DIRECTORY_SEPARATOR;
-        if (strpos($this->filepath, $prefix) === 0) {
-            $this->filepath = substr($this->filepath, strlen($prefix));
+        if (strpos($this->fullpath, $prefix) === 0) {
+            $this->filepath = substr($this->fullpath, strlen($prefix));
+        } else {
+            $this->filepath = $this->fullpath;
         }
     }
 
@@ -60,7 +63,7 @@ class tool_behateditor_feature implements cacheable_object, IteratorAggregate {
     public function prepare_to_cache() {
         return array(
             'c' => $this->component,
-            'f' => $this->filepath,
+            'f' => $this->fullpath,
         );
     }
 
@@ -72,6 +75,7 @@ class tool_behateditor_feature implements cacheable_object, IteratorAggregate {
         return new ArrayIterator(array(
             'component' => $this->component,
             'filepath' => $this->filepath,
+            'w' => is_writable($this->fullpath)
         )
         );
     }
