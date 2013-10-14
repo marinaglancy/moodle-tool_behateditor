@@ -37,11 +37,11 @@ echo $OUTPUT->header();
 
 ?>
 <form action="#" method="POST" id="behateditor_featureedit">
-    <div class="featureedit mode-source">
+    <div class="featureedit" data-mode="source">
         <div class="topheader">
             <div class="featuretabs">
-                <input type="button" class="featuretab tab-editor" data-action="editor" value="Feature editor"/>
-                <input type="button" class="featuretab tab-source" data-action="source" value="Feature source"/>
+                <input type="button" class="featuretab" data-mode="editor" value="Feature editor"/>
+                <input type="button" class="featuretab iscurrent" data-mode="source" value="Feature source"/>
             </div>
             <div class="fileactions">
                 <div class="controls hiddenifjs">
@@ -51,12 +51,10 @@ echo $OUTPUT->header();
                 </div>
             </div>
         </div>
-        <div class="content">
-            <div class="content-editor"></div>
-            <div class="content-source">
+            <div class="content content-editor" data-mode="editor"></div>
+            <div class="content content-source iscurrent" data-mode="source">
                 <textarea id="behateditor_featuresource" name="source" rows="20" cols="60"></textarea>
             </div>
-        </div>
     </div>
 </form>
 <div style="display:none">

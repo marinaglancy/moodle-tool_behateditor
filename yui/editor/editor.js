@@ -47,12 +47,15 @@ M.tool_behateditor = {
         M.tool_behateditor.stepsdefinitions = new STEP_DEFINITIONS_LIST({});
         M.tool_behateditor.load_steps_definitions(0);
         M.tool_behateditor.load_feature_files(0);
+        // Do not auto-submit the search form.
         Y.one('#behateditor_searchform').on('submit', function(e) {e.preventDefault();});
         var searchword = Y.one('#behateditor_searchword');
         searchword.on('change', M.tool_behateditor.refresh_search_results);
         searchword.on('keyup', M.tool_behateditor.refresh_search_results);
-        Y.all('#behateditor_featureedit .featureedit .featuretab').on(
+        // Click on Tab switching between editing and source modes.
+        Y.all('#behateditor_featureedit .featuretab').on(
             'click', M.tool_behateditor.click_feature_editor_tab);
+        // Expand/collapse fieldsets.
         Y.one('#behateditor_featureedit .content-editor').delegate(
                 'click',
                 function(e) {
@@ -101,34 +104,28 @@ M.tool_behateditor = {
 
     click_feature_editor_tab : function(e) {
         var container = Y.one('#behateditor_featureedit .featureedit'),
-                newmode;
-        if (e.currentTarget.hasClass('tab-editor')) {
-            newmode = 'mode-editor';
-        } else if (e.currentTarget.hasClass('tab-source')) {
-            newmode = 'mode-source';
-        } else {
+                newmode = e.currentTarget.getAttribute('data-mode'),
+                curmode = container.getAttribute('data-mode');
+        console.log('tab clicked, curmode = '+curmode+', newmode = '+newmode);
+        if (curmode === newmode) {
+            console.log('You are already on the tab '+
+                container.one('.featuretab[data-mode='+curmode+']').get('value'));
             return;
         }
-        if (container.hasClass(newmode)) {
-            console.log('You are already on the tab '+newmode);
-            return;
-        }
-        container.removeClass('mode-editor');
-        container.removeClass('mode-source');
-        container.addClass('mode-loading');
-        if (newmode === 'mode-editor') {
+        container.all('.featuretab[data-mode='+curmode+'],.content[data-mode='+curmode+']').removeClass('iscurrent');
+        container.setAttribute('data-mode', newmode);
+        if (newmode === 'editor') {
             M.tool_behateditor.convert_from_source_to_editor();
         } else {
             M.tool_behateditor.convert_from_editor_to_source();
         }
-        container.removeClass('mode-loading');
-        container.addClass(newmode);
+        container.all('.featuretab[data-mode='+newmode+'],.content[data-mode='+newmode+']').addClass('iscurrent');
     },
 
     convert_from_source_to_editor : function() {
         var source = Y.one('#behateditor_featuresource').get('value'),
                 chunks = source.trim().split(/\n[\t\s]*\n/), i, chunkheader, fieldset, chunkcontents,
-                targetdiv = Y.one('#behateditor_featureedit .content .content-editor'),
+                targetdiv = Y.one('#behateditor_featureedit .content-editor'),
                 nextline, steps;
         targetdiv.setContent('');
         for (i in chunks) {
@@ -189,32 +186,33 @@ M.tool_behateditor = {
     convert_from_editor_to_source : function() {
         var sourcecode = Y.one('#behateditor_featuresource');
         // First convert all steps from editor to source.
-        Y.all('#behateditor_featureedit .content .content-editor .step.stepmode-editor').
+        Y.all('#behateditor_featureedit .content-editor .step.stepmode-editor').
                 each(function(stepel){
             M.tool_behateditor.make_step_definition(stepel);
         });
         // Join all textareas into one source text.
         str = '';
-        Y.all('#behateditor_featureedit .content .content-editor textarea').each(function(el) {
+        Y.all('#behateditor_featureedit .content-editor textarea').each(function(el) {
             str += el.get('value').replace(/[ \n]+$/, '') + "\n";
         });
         sourcecode.set('value', str);
     },
 
     get_feature_contents : function() {
-        // TODO instead of switching to source tab convert to source if we are in editor mode.
-        M.tool_behateditor.click_feature_editor_tab(
-                {currentTarget: Y.one('#behateditor_featureedit .featuretabs .tab-source')});
-        return Y.one('#behateditor_featureedit .content-source textarea').get('value')
+        if (Y.one('#behateditor_featureedit .featureedit').getAttribute('data-mode') === 'editor') {
+            M.tool_behateditor.convert_from_editor_to_source();
+        }
+        return Y.one('#behateditor_featuresource').get('value')
     },
 
     set_feature_contents : function(text, filepath, featurecanbesaved) {
-        M.tool_behateditor.click_feature_editor_tab(
-                {currentTarget: Y.one('#behateditor_featureedit .featuretabs .tab-source')});
-        Y.one('#behateditor_featureedit .content-source textarea').set('value', text);
+        Y.one('#behateditor_featuresource').set('value', text);
         Y.one('#behateditor_featureedit .fileactions .filepath').setContent(filepath);
         Y.one('#behateditor_featureedit .controls input[data-action=save]').
                 set('value', filepath ? 'Save' : 'Save as');
+        if (Y.one('#behateditor_featureedit .featureedit').getAttribute('data-mode') === 'editor') {
+            M.tool_behateditor.convert_from_source_to_editor();
+        }
         M.tool_behateditor.set_feature_can_be_saved(featurecanbesaved);
     },
 
@@ -514,9 +512,10 @@ M.tool_behateditor = {
                     '<span class="stepaction stepaction-editor">Edit</span>'+
                     '<span class="stepaction stepaction-source">Src</span>'+
                     '</div>');
-            node.append('<div class="stepsource"><textarea rows="'+src.split(/\n/).length+
-                        '" cols="60">'+src+'</textarea></div>');
+            node.append('<div class="stepsource"><textarea rows="1" cols="60"></textarea></div>');
             node.append('<div class="stepeditor"></div>');
+            node.one('.stepsource textarea').set('value', src);
+            node.one('.stepsource textarea').set('rows', src.split(/\n/).length);
         }
         return node;
     },

@@ -1,38 +1,43 @@
 /*
 
 form#behateditor_featureedit
-    div.featureedit[.mode-source|.mode-editor|.mode-loading]
-        div.featuretabs
-            div.featuretab.tab-editor
-            div.featuretab.tab-source
-        div.content
-            div.content-editor
-                fieldset.collapsible[.featureheader|.featuresteps|.unrecognised]
-                    div.legend.ftoggler (may contain span.jsprefix)
-                    div.fcontainer
-                        div.step[.stepmode-editor|.stepmode-source[.stepmode-editor-failed]][.justadded]
-                            div.stepcontrols
-                                span.addstep
-                                span.deletestep
-                                span.stepaction.stepaction-editor // TODO data-
-                                span.stepaction.stepaction-editor
-                            div.stepsource
-                                textarea
-                            div.stepeditor data-hash="XXX"
-                                span.steptype
-                                    span[.iscurrent] data-steptype="XXX"
-                                span.stepregex
-                                    -text-
-                                    span data-type="STRING|NUMBER|UNKNOWN" data-param="XXX"
-                                        input type="text"
-                                    -text-
-                                    span data-type="[TEXT_]SELECTOR_STRING" data-param="XXX"
-                                        select
-                        div.step.laststep
-                            div.stepcontrols
-                                span.addstep
-            div.content-source
-                textarea#behateditor_featuresource
+    div.featureedit data-mode=editor|source
+        div.topheader
+            div.featuretabs
+                div.featuretab[.iscurrent] data-mode=editor
+                div.featuretab[.iscurrent] data-mode=source
+            div.fileactions
+                div.controls
+                    input type="button" data-action="files"
+                    input type="button" data-action="save"
+                    span.filepath
+        div.content.content-editor[.iscurrent]
+            fieldset.collapsible[.featureheader|.featuresteps|.unrecognised]
+                div.legend.ftoggler (may contain span.jsprefix)
+                div.fcontainer
+                    div.step[.stepmode-editor|.stepmode-source[.stepmode-editor-failed]][.justadded]
+                        div.stepcontrols
+                            span.addstep
+                            span.deletestep
+                            span.stepaction.stepaction-editor // TODO data-
+                            span.stepaction.stepaction-editor
+                        div.stepsource
+                            textarea
+                        div.stepeditor data-hash="XXX"
+                            span.steptype
+                                span[.iscurrent] data-steptype="XXX"
+                            span.stepregex
+                                -text-
+                                span data-type="STRING|NUMBER|UNKNOWN" data-param="XXX"
+                                    input type="text"
+                                -text-
+                                span data-type="[TEXT_]SELECTOR_STRING" data-param="XXX"
+                                    select
+                    div.step.laststep
+                        div.stepcontrols
+                            span.addstep
+        div.content.content-source[.iscurrent]
+            textarea#behateditor_featuresource
 
 
 form#behateditor_searchform
@@ -74,20 +79,13 @@ form#behateditor_searchform
     color:#060;
 }
 
-.path-admin-tool-behateditor .featureedit {
-    display: none;
-}
-.path-admin-tool-behateditor .featureedit.mode-editor,
-.path-admin-tool-behateditor .featureedit.mode-source {
-    display: block;
-}
-.path-admin-tool-behateditor .featureedit.mode-editor .content-source,
-.path-admin-tool-behateditor .featureedit.mode-source .content-editor {
-    display: none;
-}
 .path-admin-tool-behateditor .featureedit .content {
+    display: none;
+}
+.path-admin-tool-behateditor .featureedit .content.iscurrent {
     border: 1px solid black;
     min-height:300px;
+    display: block;
 }
 .path-admin-tool-behateditor .featureedit .featuretabs .featuretab {
     font-size: 1.2em;
@@ -95,9 +93,7 @@ form#behateditor_searchform
     border: 1px solid #888888;
     background: #DDDDDD;
 }
-/* TODO should be iscurrent */
-.path-admin-tool-behateditor .featureedit.mode-editor .featuretabs .featuretab.tab-editor,
-.path-admin-tool-behateditor .featureedit.mode-source .featuretabs .featuretab.tab-source {
+.path-admin-tool-behateditor .featureedit .featuretab.iscurrent {
     font-weight: bold;
     background: inherit;
 }
