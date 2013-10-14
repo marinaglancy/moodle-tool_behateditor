@@ -60,6 +60,10 @@ class tool_behateditor_feature implements cacheable_object, IteratorAggregate {
         return $this->hash;
     }
 
+    public function get_file_contents() {
+        return file_get_contents($this->fullpath);
+    }
+
     public function prepare_to_cache() {
         return array(
             'c' => $this->component,

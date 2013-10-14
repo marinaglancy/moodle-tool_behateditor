@@ -53,10 +53,17 @@ if ($action == 'stepsdef') {
         'features' => convert_to_array($features),
     ));
 } else if ($action == 'filecontents') {
-    $filepath = required_param('filepath', PARAM_PATH);
-    echo json_encode((object)array(
-        'filecontents' => file_get_contents($CFG->dirroot.'/'.$filepath),
-    ));
+    $filehash = required_param('filehash', PARAM_PATH);
+    $features = tool_behateditor_helper::get_feature_files();
+    if (!isset($features[$filehash])) {
+        echo json_encode((object)array('error' => 'File not found'));
+    } else {
+        echo json_encode((object)array(
+            'filecontents' => array(
+                $filehash => $features[$filehash]->get_file_contents()
+             ),
+        ));
+    }
 } else if ($action == 'savefile') {
     $filepath = required_param('filepath', PARAM_PATH);
     $filecontents = required_param('filecontents', PARAM_RAW);
@@ -69,16 +76,10 @@ if ($action == 'stepsdef') {
             $clue = 'chmod 777 '.dirname($filepath);
         }
     } else if (!is_writable($filepath)) {
-        if (file_exists($filepath)) {
-            $clue = 'chmod 666 '.$filepath;
-        } else if (file_exists(dirname($filepath))) {
-            $clue = 'chmod 777 '.dirname($filepath);
-        } else {
-            $clue = 'mkdir -m 777 -p '.dirname($filepath);
-        }
+        $clue = 'chmod 666 '.$filepath;
     }
     if ($clue !== null) {
-        echo json_encode((object)array('error' => 'Can not write to file. You may want to execute:'."<br><br><b>".$clue.'</b>'));
+        echo json_encode((object)array('error' => 'Can not write to file. You may want to execute:<br><br><b>'.$clue.'</b>'));
     } else {
         file_put_contents($filepath, $filecontents);
         $features = tool_behateditor_helper::get_feature_files(true);
