@@ -29,7 +29,7 @@ require_once($CFG->libdir . '/behat/classes/behat_config_manager.php');
 //admin_externalpage_setup('toolbehateditor');
 $PAGE->set_url(new moodle_url('/admin/tool/behateditor/index.php'));
 $PAGE->set_context(context_system::instance());
-$PAGE->set_pagelayout('admin');
+$PAGE->set_pagelayout('popup');
 
 $api = new moodle_url('/admin/tool/behateditor/ajax.php');
 $PAGE->requires->yui_module('moodle-tool_behateditor-editor', 'M.tool_behateditor.init', array($api->out()), null, true);
@@ -51,10 +51,10 @@ echo $OUTPUT->header();
                 </div>
             </div>
         </div>
-            <div class="content content-editor" data-mode="editor"></div>
-            <div class="content content-source iscurrent" data-mode="source">
-                <textarea id="behateditor_featuresource" name="source" rows="20" cols="60"></textarea>
-            </div>
+        <div class="content content-editor" data-mode="editor"></div>
+        <div class="content content-source iscurrent" data-mode="source">
+            <textarea id="behateditor_featuresource" name="source" rows="20" cols="60"></textarea>
+        </div>
     </div>
 </form>
 <div style="display:none">

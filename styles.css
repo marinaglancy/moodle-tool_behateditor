@@ -11,7 +11,7 @@ form#behateditor_featureedit
                     input type="button" data-action="files"
                     input type="button" data-action="save"
                     span.filepath
-        div.content.content-editor[.iscurrent]
+        div.content.content-editor[.iscurrent] data-mode=editor
             fieldset.collapsible[.featureheader|.featuresteps|.unrecognised]
                 div.legend.ftoggler (may contain span.jsprefix)
                 div.fcontainer
@@ -36,7 +36,7 @@ form#behateditor_featureedit
                     div.step.laststep
                         div.stepcontrols
                             span.addstep
-        div.content.content-source[.iscurrent]
+        div.content.content-source[.iscurrent] data-mode=source
             textarea#behateditor_featuresource
 
 
@@ -84,8 +84,17 @@ form#behateditor_searchform
 }
 .path-admin-tool-behateditor .featureedit .content.iscurrent {
     border: 1px solid black;
-    min-height:300px;
+    min-height: 300px;
+    overflow: auto;
     display: block;
+}
+.path-admin-tool-behateditor .featureedit .content-source {
+    padding:0;
+    overflow:hidden;
+}
+.path-admin-tool-behateditor .featureedit .content-source textarea {
+    width:98%;
+    height:98%;
 }
 .path-admin-tool-behateditor .featureedit .featuretabs .featuretab {
     font-size: 1.2em;

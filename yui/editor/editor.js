@@ -50,8 +50,7 @@ M.tool_behateditor = {
         // Do not auto-submit the search form.
         Y.one('#behateditor_searchform').on('submit', function(e) {e.preventDefault();});
         var searchword = Y.one('#behateditor_searchword');
-        searchword.on('change', M.tool_behateditor.refresh_search_results);
-        searchword.on('keyup', M.tool_behateditor.refresh_search_results);
+        searchword.on('valuechange', M.tool_behateditor.refresh_search_results);
         // Click on Tab switching between editing and source modes.
         Y.all('#behateditor_featureedit .featuretab').on(
             'click', M.tool_behateditor.click_feature_editor_tab);
@@ -94,6 +93,26 @@ M.tool_behateditor = {
         Y.one('#behateditor_fileslist').delegate(
             'click', M.tool_behateditor.click_file,
             '.file input[type=button]');
+        // Resize to fullscreen
+        M.tool_behateditor.resize_window();
+        Y.on('windowresize', function(e) {M.tool_behateditor.resize_window();});
+        // Track form changes
+        Y.one('#behateditor_featureedit').delegate('valuechange',
+            function(){M.tool_behateditor.set_feature_can_be_saved(true);},
+            'input,textarea,select');
+        M.tool_behateditor.set_feature_contents('', null, false);
+    },
+
+    resize_window : function() {
+        var container = Y.one('#behateditor_featureedit .featureedit .content.iscurrent');
+        var newheight = Y.DOM.winHeight();
+        container.setStyle('height', newheight);
+        var delta = Y.DOM.docHeight() - Y.DOM.winHeight();
+        newheight = newheight - delta;
+        if (newheight < 300) {
+            newheight = 300;
+        }
+        container.setStyle('height', newheight);
     },
 
     refresh_search_results : function() {
@@ -120,6 +139,7 @@ M.tool_behateditor = {
             M.tool_behateditor.convert_from_editor_to_source();
         }
         container.all('.featuretab[data-mode='+newmode+'],.content[data-mode='+newmode+']').addClass('iscurrent');
+        M.tool_behateditor.resize_window();
     },
 
     convert_from_source_to_editor : function() {
@@ -217,7 +237,12 @@ M.tool_behateditor = {
     },
 
     set_feature_can_be_saved : function(featurecanbesaved) {
-        // TODO
+        var element = Y.one('#behateditor_featureedit .controls input[data-action=save]');
+        if (featurecanbesaved) {
+            element.removeClass('hiddenifjs');
+        } else {
+            element.addClass('hiddenifjs');
+        }
     },
 
     make_step_definition : function(stepel) {
@@ -666,7 +691,7 @@ STEP_DEFINITIONS_LIST.prototype = {
     },
     /** Seach definitions matching keywords (still server side). */
     search_definitions : function(searchstring) {
-        searchstring = searchstring.replace(/[\.,!\?;:\-\+\'"\\/\(\)\#|]/g,' ').trim()
+        searchstring = searchstring.replace(/[\.,!\?;:\-\+\'"\\/\(\)\#|]/g,' ').toLowerCase().trim()
         var hashes = this.hashes;
         if (searchstring.length) {
             var allkeywords = this._get_matching_keywords(searchstring);
@@ -865,4 +890,4 @@ Y.extend(STEP_DEFINITION, Y.Base, STEP_DEFINITION.prototype, {
     NAME : 'moodle-tool_behateditor-stepdefinition'
 });
 
-}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'array-extras', 'json-parse', 'overlay', 'moodle-core-notification'] });
+}, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'array-extras', 'event-valuechange', 'event-resize', 'json-parse', 'overlay', 'moodle-core-notification'] });
