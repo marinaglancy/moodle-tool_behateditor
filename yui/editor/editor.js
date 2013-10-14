@@ -115,6 +115,23 @@ M.tool_behateditor = {
         container.setStyle('height', newheight);
     },
 
+    add_status_message : function(msgtext, msgclass, timeout) {
+        var node = Y.Node.create('<div></div>');
+        nodeid = node.generateID();
+        if (!msgclass) {
+            msgclass = 'notification';
+        }
+        node.addClass('msg'+msgclass);
+        node.setContent(msgtext);
+        Y.one('#behateditor_messages').append(node);
+        if (!timeout) {
+            // Default timeout 10s.
+            timeout = 10000;
+        }
+        Y.later(timeout, this, function(id){Y.all('#'+id).remove();}, [nodeid]);
+        return nodeid;
+    },
+
     refresh_search_results : function() {
         var searchword = Y.one('#behateditor_searchword'),
                 keywords = searchword.get('value');
@@ -125,10 +142,9 @@ M.tool_behateditor = {
         var container = Y.one('#behateditor_featureedit .featureedit'),
                 newmode = e.currentTarget.getAttribute('data-mode'),
                 curmode = container.getAttribute('data-mode');
-        console.log('tab clicked, curmode = '+curmode+', newmode = '+newmode);
         if (curmode === newmode) {
-            console.log('You are already on the tab '+
-                container.one('.featuretab[data-mode='+curmode+']').get('value'));
+            //console.log('You are already on the tab '+
+            //    container.one('.featuretab[data-mode='+curmode+']').get('value'));
             return;
         }
         container.all('.featuretab[data-mode='+curmode+'],.content[data-mode='+curmode+']').removeClass('iscurrent');
@@ -286,7 +302,7 @@ M.tool_behateditor = {
             return;
         }
         if (stepel.hasClass(newclass)) {
-            console.log('The current mode for this step is already '+newclass);
+            //console.log('The current mode for this step is already '+newclass);
             return;
         }
         if (newclass === 'stepmode-editor') {
@@ -305,6 +321,7 @@ M.tool_behateditor = {
     click_feature_editor_deletestep : function(e) {
         var node, step = e.currentTarget.ancestor('.step');
         step.remove();
+        M.tool_behateditor.add_status_message('Step deleted', 'notification');
     },
 
     click_feature_editor_addstep : function(e) {
@@ -356,6 +373,7 @@ M.tool_behateditor = {
                             title:'Error',
                             message:data.error,
                             lightbox:true});
+                        M.tool_behateditor.add_status_message('Unable to save file', 'error');
                         error.show();
                         // TODO error callback
                     } else {
@@ -366,6 +384,7 @@ M.tool_behateditor = {
                             Y.all('#behateditor_fileslist .file[data-loaded=1]').setAttribute('data-loaded', 0);
                         }
                         M.tool_behateditor.set_feature_contents(contents, filepath, false);
+                        M.tool_behateditor.add_status_message('File saved', 'notification')
                         if (successcallback) {
                             successcallback();
                         }
@@ -497,7 +516,7 @@ M.tool_behateditor = {
             M.tool_behateditor.search_dlg.hide();
         }
         if (tempnode === null) {
-            console.log('Add step target is lost');
+            M.tool_behateditor.add_status_message('Add step target is lost', 'error');
             return;
         }
         if (M.tool_behateditor.stepsdefinitions.get(hash)) {
@@ -515,6 +534,7 @@ M.tool_behateditor = {
         node.addClass('justadded');
         // Remove highlighting after 5 seconds.
         Y.later(5000,this,function(id){Y.all('#'+id).removeClass('justadded');},[nodeid]);
+        M.tool_behateditor.add_status_message('Step added', 'notification', 5000);
     },
 
     click_searchoutput_step : function(e) {
@@ -556,7 +576,8 @@ M.tool_behateditor = {
     },
 
     load_steps_definitions : function(force) {
-        var api = M.tool_behateditor.api;
+        var api = M.tool_behateditor.api,
+            msgnodeid = M.tool_behateditor.add_status_message('Loading step definitions...', 'notification', 180000);
         Y.io(api,{
             method: 'GET',
             on: {
@@ -567,17 +588,23 @@ M.tool_behateditor = {
                     M.tool_behateditor.textselectors = data.textselectors;
                     M.tool_behateditor.selectors = data.selectors;
                     M.tool_behateditor.refresh_search_results();
+                    Y.all('#'+msgnodeid).remove(p.msgnodeid);
+                    M.tool_behateditor.add_status_message('Successfully loaded step definitions', 'notification');
                 }
             },
             data: {
                 action : 'stepsdef',
                 force : force
+            },
+            arguments: {
+                msgnodeid : msgnodeid
             }
         });
     },
 
     load_feature_files : function(force) {
-        var api = M.tool_behateditor.api;
+        var api = M.tool_behateditor.api,
+            msgnodeid = M.tool_behateditor.add_status_message('Loading feature files list...', 'notification', 180000);
         Y.io(api,{
             method: 'GET',
             on: {
@@ -585,11 +612,16 @@ M.tool_behateditor = {
                     data = Y.JSON.parse(o.responseText);
                     M.tool_behateditor.featurefiles = data.features;
                     Y.all('#behateditor_featureedit .fileactions .controls.hiddenifjs').removeClass('hiddenifjs');
+                    Y.all('#'+p.msgnodeid).remove();
+                    M.tool_behateditor.add_status_message('Successfully loaded feature files list', 'notification');
                 }
             },
             data: {
                 action : 'features',
                 force : force
+            },
+            arguments: {
+                msgnodeid : msgnodeid
             }
         });
     },
@@ -707,16 +739,18 @@ STEP_DEFINITIONS_LIST.prototype = {
         var hash = null, i,
                 lines = text.replace(/[\s\n]+$/,'').replace(/^\n+/,'').split(/\n/)
         if (!lines.length) {
-            console.log('Can not parse empty step');
+            M.tool_behateditor.add_status_message('Can not parse empty step', 'warning');
             return null;
         }
         if (lines.length > 1) {
-            console.log('Can not parse multiline step (TODO)');
+            M.tool_behateditor.add_status_message('Can not parse multiline step (yet)<br><span="stepregex">'+
+                    lines[0]+'</span>', 'notification', 2000);
             return null;
             // TODO tables!
         }
         if (!lines[0].match(/^ *(And|Given|Then|When) /)) {
-            console.log('Can not parse step: first word must be And|Given|Then|When');
+            M.tool_behateditor.add_status_message('Can not parse step: first word must be And|Given|Then|When<br><span="stepregex">'+
+                    lines[0]+'</span>', 'warning');
             return null;
         }
         for (i in this.list) {
@@ -724,13 +758,15 @@ STEP_DEFINITIONS_LIST.prototype = {
                 if (hash === null) {
                     hash = i;
                 } else {
-                    console.log('Can not parse step: More than one definition match');
+                    M.tool_behateditor.add_status_message('Can not parse step: More than one definition match<br><span="stepregex">'+
+                    lines[0]+'</span>', 'warning');
                     return null;
                 }
             }
         }
         if (hash === null) {
-            console.log('Can not parse step: No matching definition found');
+            M.tool_behateditor.add_status_message('Can not parse step: No matching definition found<br><span="stepregex">'+
+                    lines[0]+'</span>', 'warning');
             return null;
         }
         return this.list[hash];

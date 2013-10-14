@@ -53,6 +53,31 @@ form#behateditor_searchform
 
 
 */
+.path-admin-tool-behateditor .statusmessages {
+    position: fixed;
+    top: 30px;
+    right: 20px;
+    z-index: 99;
+}
+.path-admin-tool-behateditor .statusmessages div {
+    background: white;
+    border: 1px solid #888888;
+    width: 300px;
+    padding: 2px;
+    margin: 2px;
+}
+.path-admin-tool-behateditor .statusmessages div.msgerror {
+    background: #f25f0f;
+}
+.path-admin-tool-behateditor .statusmessages div.msgwarning {
+    background: #EEEE22;
+}
+.path-admin-tool-behateditor .statusmessages div.msgnotification {
+    background: #def;
+}
+.path-admin-tool-behateditor .statusmessages div .stepregex {
+    color:#060;
+}
 .path-admin-tool-behateditor .s-definitions{
     border-style: solid;
     border-width: 1px;

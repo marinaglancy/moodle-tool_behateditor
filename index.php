@@ -57,6 +57,7 @@ echo $OUTPUT->header();
         </div>
     </div>
 </form>
+<div class="statusmessages" id="behateditor_messages"></div>
 <div style="display:none">
 <form action="#" method="POST" id="behateditor_searchform">
     <input name="keyword" type="text" id="behateditor_searchword">
