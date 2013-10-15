@@ -36,6 +36,9 @@ class tool_behateditor_helper {
     /** @var tool_behateditor_step_definition[] */
     static private $stepdefinitions = null;
 
+    /** @var tool_behateditor_step_function[] */
+    static private $stepfunctions = null;
+
     /**
      *
      * @return array
@@ -191,5 +194,41 @@ class tool_behateditor_helper {
             }
         }
         return $featurefiles;
+    }
+
+    /**
+     *
+     * @param bool $force if true cache will not be used
+     * @return tool_behateditor_step_function[]
+     */
+    public static function get_step_functions($forceretrieve = false) {
+        //if (!$forceretrieve && self::$stepfunctions !== null) {
+        //    return self::$stepfunctions;
+        //}
+        $cache = cache::make('tool_behateditor', 'stepdef');
+        if ($forceretrieve) {
+            $cache->purge();
+        }
+        self::$stepfunctions = array();
+        if (!$forceretrieve && ($steps = $cache->get('stepfunctions')) !== false) {
+            foreach ($steps as $step) {
+                self::$stepfunctions[$step->get_hash()] = $step;
+            }
+        } else {
+            $components = self::get_componenets();
+            foreach ($components as $componentname => $path) {
+                $file = new tool_behateditor_file($path);
+                foreach ($file->get_functions() as $function) {
+                    try {
+                        $f = new tool_behateditor_step_function($componentname, $path, $function, $file);
+                    } catch (coding_exception $e) {
+                        continue;
+                    }
+                    self::$stepfunctions[$f->get_hash()] = $f;
+                }
+            }
+            $cache->set('stepfunctions', new cacheable_object_array(array_values(self::$stepfunctions)));
+        }
+        return self::$stepfunctions;
     }
 }

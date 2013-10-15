@@ -808,30 +808,49 @@ var STEP_DEFINITION = function() {
 
 STEP_DEFINITION.prototype = {
     hash : null,
-    stepregex : null,
     steptype : null,
     stepdescription : null,
     keywords : [],
+    component : null,
+    functionname : null,
+    path : null,
+    lines : null,
+    fullregex : null,
+    steptext : null,
+    //params : null,
+    multiline : false,
     /**
      * Called during the initialisation process of the object.
      * @method initializer
      */
     initializer : function(data) {
-        this.hash = data['hash'];
-        this.stepregex = data['stepregex'];
-        this.steptype = data['steptype'];
-        this.stepdescription = data['stepdescription'];
-        this.keywords = data['keywords'];
+        for (var key in data) {
+            this[key] = data[key];
+        }
+        this.steptext = this.steptext.replace(/^\//,'').replace(/\/$/,'');
+        var node = Y.Node.create('<div></div>');
+        node.setContent(this.steptext);
+        node.all('span').each(function(el){
+            el.get('parentNode').insertBefore('('+el.getAttribute('data-regex')+')', el);
+            el.remove();
+        });
+        this.fullregex = new RegExp(node.getContent(), '');
+        this.steptext = this.steptext.replace(/^\^/,'').replace(/\$$/,'');
+        //console.log(this.fullregex)
     },
     /**
      * Returns HTML to display the definition in the search resutls.
      * @returns {Node}
      */
     display_in_search_results : function() {
-        return Y.Node.create('<div class="step" data-hash="'+this.hash+
+        var node = Y.Node.create('<div class="step" data-hash="'+this.hash+
             '"><div class="stepdescription">'+this.stepdescription+
             '</div><div class="stepcontent"><span class="steptype">'+this.steptype+
-            ' </span><span class="stepregex">'+this.stepregex+'</span></div></div>');
+            ' </span><span class="stepregex">'+this.steptext+'</span></div></div>');
+        node.all('.stepregex span').each(function(el){
+            el.setContent(el.getAttribute('data-name'));
+        });
+        return node;
     },
     has_any_keyword : function(keywords) {
         for (var k in keywords) {
@@ -849,15 +868,15 @@ STEP_DEFINITION.prototype = {
      * @returns {Array}|false
      */
     match_step : function(str) {
-        var lines = str.replace(/[\s\n]+$/,'').replace(/^\n+/,'').split(/\n/);
-        var firstline = lines[0].trim();
-        var regex = this.stepregex;
-        regex = '^(Given|When|Then|And) '+regex.replace(/"([A-Z][A-Z|0-9|_]*)"/g,
-                function(str,match) { return '"'+M.tool_behateditor.get_regex_from_param(match)+'"'; })+'$';
+        var lines = str.replace(/[\s\n]+$/,'').replace(/^\n+/,'').split(/\n/),
+                firstwordarray = lines[0].trim().match(/^(\w+) /),
+                firstword = firstwordarray[1],
+                firstline = lines[0].trim().replace(/^(Given|When|Then|And) /,'');
         try {
-            var matches = firstline.match(new RegExp(regex, ''));
+            var matches = firstline.match(this.fullregex);
             if (matches !== null) {
-                matches.shift(); // First element is the whole string, we don't need it.
+                //matches.shift(); // First element is the whole string, we don't need it.
+                matches[0] = firstword; // TODO not nice
             }
             return matches;
         } catch(e) {
@@ -865,10 +884,13 @@ STEP_DEFINITION.prototype = {
         }
     },
     get_new_step_text : function() {
-        return '    ' + this.steptype + ' ' +
-                this.stepregex.replace(/"([A-Z][A-Z|0-9|_]*)"/g,
-                function(str,match) { return '"'+M.tool_behateditor.get_defaultvalue_from_param(match)+'"'; });
-        // TODO multiline
+        var tmp = Y.Node.create('<div></div>');
+        tmp.setContent(this.steptext);
+        tmp.all('span').each(function(el){
+            el.get('parentNode').insertBefore(el.getAttribute('data-default'), el);
+            el.remove();
+        });
+        return '    ' + this.steptype + ' ' + tmp.getContent();
     },
     /**
      * Converts from editor to sourcecode
@@ -877,13 +899,17 @@ STEP_DEFINITION.prototype = {
      * @returns {String}
      */
     convert_from_editor_to_source : function(editornode) {
-        var str = this.stepregex,
-                steptype = editornode.one('.steptype .iscurrent').getAttribute('data-steptype');
-        str = str.replace(/"([A-Z][A-Z|0-9|_]*)"/g, function(fullstring) {
-            return '"' + editornode.one('.stepregex').
-                    one('span[data-param='+fullstring+'] input,span[data-param='+fullstring+'] select').get('value') + '"';
+        // TODO!
+        var steptype = editornode.one('.steptype .iscurrent').getAttribute('data-steptype'),
+                node = Y.Node.create('<div></div>');
+        node.append(this.steptext);
+        node.all('span').each(function(el){
+            var name = el.getAttribute('data-name');
+            var value = editornode.one('.stepregex span[data-name="'+name+'"] input,span[data-name="'+name+'"] select').get('value');
+            el.get('parentNode').insertBefore(value, el);
+            el.remove();
         });
-        return '    '+steptype+' '+str;
+        return '    '+steptype+' '+node.getContent();
     },
     /**
      * Converts from sourcecode to editor
@@ -891,13 +917,6 @@ STEP_DEFINITION.prototype = {
      * @returns {Node}
      */
     convert_from_sourcecode_to_editor : function(src, editornode) {
-        var steptext = this.stepregex.replace(/"([A-Z][A-Z|0-9|_]*)"/g,
-            function(fullstring, param) {
-                return '"<span data-param="'+param+'" data-type="'+
-                        M.tool_behateditor.get_type_from_param(param)+
-                        '"></span>"';
-            });
-
         // CREATE HTML for steptype.
         var steptypenode = Y.Node.create('<span class="steptype"></span>');
         Y.Array.each(['Given', 'When', 'Then', 'And'],
@@ -905,23 +924,22 @@ STEP_DEFINITION.prototype = {
 
         // CREATE HTML for stepregex.
         var stepregexnode = Y.Node.create('<span class="stepregex"></span>');
-        stepregexnode.append(steptext);
-        stepregexnode.all('span[data-type="SELECTOR_STRING"]').each(function(el){
+        stepregexnode.append(this.steptext);
+        stepregexnode.all('span[data-type="SELECT"]').each(function(el){
             el.append('<select size="1"></select>');
-            Y.Array.each(M.tool_behateditor.selectors, function(o){
-                el.one('select').append('<option value="'+o+'">'+o+'</option>');
-            });
-        });
-        stepregexnode.all('span[data-type="TEXT_SELECTOR_STRING"]').each(function(el){
-            el.append('<select size="1"></select>');
-            Y.Array.each(M.tool_behateditor.textselectors, function(o){
+            //console.log(el.getAttribute('data-options').split(','));
+            Y.Array.each(el.getAttribute('data-options').split(','), function(o){
                 el.one('select').append('<option value="'+o+'">'+o+'</option>');
             });
         });
         stepregexnode.all('span[data-type="NUMBER"]').each(function(el){
             el.append('<input type="text" size="5" />');
         });
-        stepregexnode.all('span[data-type="STRING"],span[data-type="UNKNOWN"]').each(function(el){
+        stepregexnode.all('span[data-type="STRING"]').each(function(el){
+            el.append('<input type="text" size="20" />');
+        });
+        stepregexnode.all('span[data-type="TableNode"]').each(function(el){
+            // TODO tables
             el.append('<input type="text" size="20" />');
         });
 
@@ -939,6 +957,7 @@ STEP_DEFINITION.prototype = {
         stepregexnode.all('span').each(function(el){
             el.one('select,input').set('value', values.shift());
         });
+        // stepregexnode.all('select,input').set('value', values.shift()); // TODO easier?
 
         return editornode;
     }

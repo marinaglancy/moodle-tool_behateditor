@@ -41,11 +41,11 @@ $action = optional_param('action', null, PARAM_ALPHA);
 if ($action == 'stepsdef') {
     require_once($CFG->libdir . '/behat/classes/behat_selectors.php');
     $force = optional_param('force', false, PARAM_BOOL);
-    $steps = tool_behateditor_helper::get_step_definitions($force);
+    $steps = tool_behateditor_helper::get_step_functions($force);
     echo json_encode((object)array(
         'stepsdefinitions' => convert_to_array($steps),
-        'textselectors' => array_values(behat_selectors::get_allowed_text_selectors()),
-        'selectors' => array_values(behat_selectors::get_allowed_selectors()),
+        //'textselectors' => array_values(behat_selectors::get_allowed_text_selectors()),
+        //'selectors' => array_values(behat_selectors::get_allowed_selectors()),
     ));
 } else if ($action == 'features') {
     $features = tool_behateditor_helper::get_feature_files();
