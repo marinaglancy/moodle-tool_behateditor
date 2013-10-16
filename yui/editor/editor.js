@@ -172,8 +172,8 @@ M.tool_behateditor = {
                 chunkcontents.append('<div class="hiddenifjs"><textarea></textarea></div>');
             }
             var lines = chunks[i].replace(/\s+\n/g,"\n").replace(/^\n+/,'').replace('/\n+$/','').split(/\n/);
-            if ((lines.length > 0 && lines[0].match(/^  (Background|Scenario):/)) ||
-                    (lines.length > 1 && lines[0].match(/^  \@/) && lines[1].match(/^  (Background|Scenario):/))) {
+            if ((lines.length > 0 && lines[0].match(/^ *(Background|Scenario|Scenario Outline|Examples):/)) ||
+                    (lines.length > 1 && lines[0].match(/^  \@/) && lines[1].match(/^ *(Background|Scenario|Scenario Outline):/))) {
                 var jsprefix = '';
                 if (lines[0].match(/^  \@/)) {
                     jsprefix = lines.shift();

@@ -56,7 +56,7 @@ form#behateditor_searchform
 .path-admin-tool-behateditor .statusmessages {
     position: fixed;
     top: 30px;
-    right: 20px;
+    right: 40px;
     z-index: 99;
 }
 .path-admin-tool-behateditor .statusmessages div {
@@ -117,8 +117,11 @@ form#behateditor_searchform
     padding:0;
     overflow:hidden;
 }
-.path-admin-tool-behateditor .featureedit .content-source textarea {
+.path-admin-tool-behateditor textarea {
+    font-family: monospace;
     width:98%;
+}
+.path-admin-tool-behateditor .featureedit .content-source textarea {
     height:98%;
 }
 .path-admin-tool-behateditor .featureedit .featuretabs .featuretab {
@@ -206,6 +209,9 @@ form#behateditor_searchform
 }
 .path-admin-tool-behateditor .step.stepmode-editor-failed .stepcontrols .stepaction-editor {
     color: red;
+}
+.path-admin-tool-behateditor .stepsource {
+    overflow: hidden;
 }
 .path-admin-tool-behateditor .step.stepmode-editor .stepsource {
     display:none;
