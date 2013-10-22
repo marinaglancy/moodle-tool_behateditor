@@ -181,11 +181,13 @@ class tool_behateditor_helper {
         global $CFG;
         require_once($CFG->libdir . '/testing/classes/tests_finder.php');
         $componentpaths = tests_finder::get_components_with_tests('features');
+        asort($componentpaths);
 
         $featurefiles = array();
         foreach ($componentpaths as $component => $path) {
             $files = array_filter(get_directory_list($path),
                     create_function('$a', 'return pathinfo($a, PATHINFO_EXTENSION) == "feature";'));
+            sort($files);
             foreach ($files as $filepath) {
                 $feature = new tool_behateditor_feature($component, $path, $filepath);
                 if (!isset($featurefiles[$feature->get_hash()])) {

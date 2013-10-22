@@ -343,7 +343,7 @@ M.tool_behateditor = {
                 draggable    : true,
                 bodyContent  : Y.one('#behateditor_fileselectform'),
                 headerContent: 'Feature files', // TODO dynamic
-                width        : '700px',
+                width        : '900px',
                 height       : '500px',
                 modal        : true,
                 visible      : false
@@ -352,13 +352,20 @@ M.tool_behateditor = {
         M.tool_behateditor.files_dlg.show();
         var listnode = Y.one('#behateditor_fileslist');
         listnode.setContent('');
+        var lastcomponent = null;
         for (var i in M.tool_behateditor.featurefiles) {
-            listnode.append('<div class="file" data-hash="'+i+'" data-loaded="0"><div>'+
-                    M.tool_behateditor.featurefiles[i].filepath.replace('/tests/behat/','/...../').
-                    replace(/\/([^\/]*)\.feature/, '/<b>$1</b>.feature')+
-                    '<input type="button" data-action="edit" value="Edit">'+
+            if (lastcomponent === null || lastcomponent !== M.tool_behateditor.featurefiles[i].component) {
+                lastcomponent = M.tool_behateditor.featurefiles[i].component;
+                listnode.append('<div class="filecomponent">'+lastcomponent+'<div>');
+            }
+            listnode.append('<div class="file" data-hash="'+i+'" data-loaded="0">'+
+                    '<div>'+
+                    '<span class="filecontrols"><input type="button" data-action="edit" value="Edit">'+
                     '<input type="button" data-action="import" value="Import">'+
-                    '<input type="button" data-action="preview" value="Preview"><div>'+
+                    '<input type="button" data-action="preview" value="Preview"></span>'+
+                    '<span class="filename">'+M.tool_behateditor.featurefiles[i].filepath.replace(/^.*\/tests\/behat\//,'').
+                    replace(/([^\/]*)\.feature/, '<b>$1</b>.feature')+'</span>'+
+                    '</div>'+
                     '<div class="preview hiddenifjs"><textarea rows="6" cols="80"></textarea></div>'+
                     '</div>');
         }

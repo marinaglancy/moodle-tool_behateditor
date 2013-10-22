@@ -260,3 +260,15 @@ form#behateditor_searchform
 .path-admin-tool-behateditor .featurefileslist .file:hover {
     background: yellow;
 }
+
+.path-admin-tool-behateditor .featurefileslist .filecomponent {
+    color:#888;
+}
+
+.path-admin-tool-behateditor .featurefileslist .file {
+    padding-left: 40px;
+}
+
+.path-admin-tool-behateditor .featurefileslist .file .filename {
+    padding-left: 5px;
+}
