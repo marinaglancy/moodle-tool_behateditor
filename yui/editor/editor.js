@@ -86,6 +86,9 @@ M.tool_behateditor = {
         Y.one('#behateditor_searchoutput').delegate(
             'click', M.tool_behateditor.click_searchoutput_step,
             '.step');
+        Y.one('#behateditor_searchoutput').delegate(
+            'dblclick', M.tool_behateditor.select_searchoutput_step,
+            '.step');
         // File actions (files, save).
         Y.all('#behateditor_featureedit .controls input').on(
                 'click', M.tool_behateditor.click_file_control, this);
@@ -479,8 +482,8 @@ M.tool_behateditor = {
                 draggable    : true,
                 bodyContent  : Y.one('#behateditor_searchform'),
                 headerContent: 'Search step definition',
-                width        : '700px',
-                height       : '300px',
+                width        : '900px',
+                height       : '500px',
                 modal        : true,
                 visible      : false
             });
@@ -493,10 +496,19 @@ M.tool_behateditor = {
             }); */
         }
         M.tool_behateditor.search_dlg.show();
-        M.tool_behateditor.search_dlg.align('#behateditor_featureedit .content-editor .tempaddstep',
-            [Y.WidgetPositionAlign.TL, Y.WidgetPositionAlign.BL]);
+        //M.tool_behateditor.search_dlg.align('#behateditor_featureedit .content-editor .tempaddstep',
+        //    [Y.WidgetPositionAlign.TL, Y.WidgetPositionAlign.BL]);
         Y.one('#behateditor_searchword').focus();
         Y.one('#behateditor_searchword').select();
+        // deselect step definitions from the last search
+        Y.all('#behateditor_searchoutput .step.isselected').removeClass('isselected');
+        Y.one('#behateditor_searchdetails').addClass('hiddenifjs');
+        var msgnodeid = M.tool_behateditor.add_status_message('Double click step definition to add it', 'notification', 180000);
+        M.tool_behateditor.search_dlg.after("visibleChange", function(e) {
+            if (!M.tool_behateditor.search_dlg.get('visible')) {
+                Y.all('#'+msgnodeid).remove(msgnodeid);
+            }
+        });
     },
 
     close_addstep_dialogue : function(hash) {
@@ -527,7 +539,12 @@ M.tool_behateditor = {
     },
 
     click_searchoutput_step : function(e) {
-        var hash = e.currentTarget.getAttribute('data-hash').replace(/"/g,'');
+        var hash = e.currentTarget.getAttribute('data-hash');
+        M.tool_behateditor.stepsdefinitions.get(hash).display_in_search_details();
+    },
+
+    select_searchoutput_step : function(e) {
+        var hash = e.currentTarget.getAttribute('data-hash');
         M.tool_behateditor.close_addstep_dialogue(hash);
     },
 
@@ -844,12 +861,30 @@ STEP_DEFINITION.prototype = {
      */
     display_in_search_results : function() {
         var node = Y.Node.create('<div class="step" data-hash="'+this.hash+
-            '"><div class="stepdescription">'+this.stepdescription+
+            '"><div class="stepcomponent">'+this.component.replace(/^behat_/,'')+
             '</div><div class="stepcontent"><span class="steptype">'+this.steptype+
             ' </span><span class="stepregex">'+this.steptext+'</span></div></div>');
         node.all('.stepregex span').each(function(el){
             el.setContent(el.getAttribute('data-name'));
         });
+        return node;
+    },
+    display_in_search_details : function() {
+        var node = Y.one('#behateditor_searchdetails .step');
+        Y.all('#behateditor_searchoutput .step.isselected').removeClass('isselected');
+        Y.all('#behateditor_searchdetails').removeClass('hiddenifjs');
+        Y.all('#behateditor_searchoutput .step[data-hash="'+this.hash+'"]').addClass('isselected');
+        node.setAttribute('data-hash', this.hash);
+        node.one('.stepcomponent').setContent(this.component.replace(/^behat_/,''));
+        node.one('.stepdescription').setContent(this.stepdescription);
+        node.one('.steptype').setContent(this.steptype);
+        node.one('.stepregex').setContent(this.steptext);
+        node.all('.stepregex span').each(function(el){
+            el.setContent(el.getAttribute('data-name'));
+        });
+        node.one('.stepfunctionname').setContent(this.functionname+'()');
+        node.one('.steppath').setContent(this.path);
+        node.one('.steppath').set('href', 'https://github.com/moodle/moodle/blob/master/'+this.path+'#L'+this.lines[0]+'-'+this.lines[1]);
         return node;
     },
     has_any_keyword : function(keywords) {

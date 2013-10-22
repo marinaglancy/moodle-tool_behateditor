@@ -62,6 +62,21 @@ echo $OUTPUT->header();
 <form action="#" method="POST" id="behateditor_searchform">
     <input name="keyword" type="text" id="behateditor_searchword">
     <div id="behateditor_searchoutput" class="s-definitions"></div>
+    <div id="behateditor_searchdetails" class="stepdetails">
+        <div class="step" data-hash="">
+            <div>
+                <div class="stepcomponent"></div>
+                <div class="stepcontent">
+                    <span class="steptype"></span><span class="stepregex"></span>
+                </div>
+            </div>
+            <div class="stepsource">
+                Function: <span class="stepfunctionname"></span> in
+                <a href="" class="steppath" target="_blank"></a>
+            </div>
+            <div class="stepdescription"></div>
+        </div>
+    </div>
 </form>
 <form action="#" method="POST" id="behateditor_fileselectform">
     <div id="behateditor_fileslist" class="featurefileslist"></div>
