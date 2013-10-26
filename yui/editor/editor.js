@@ -247,7 +247,9 @@ M.tool_behateditor = {
         // Join all textareas into one source text.
         str = '';
         Y.all('#behateditor_featureedit .content-editor textarea').each(function(el) {
-            str += el.get('value').replace(/[ \n]+$/, '') + "\n";
+            if (!el.hasClass('skiptextarea')) {
+                str += el.get('value').replace(/[ \n]+$/, '') + "\n";
+            }
         });
         sourcecode.set('value', str);
     },
@@ -769,6 +771,11 @@ STEP_DEFINITIONS_LIST.prototype = {
      * @method initializer
      */
     initializer : function(stepsdefinitions) {
+        this.list = {};
+        this.keywords = [];
+        this.hashes = [];
+        this.list['000'] = new STEP_DEFINITION_TABLE({hash:'000'});
+        this.hashes.push('000');
         for (var hash in stepsdefinitions) {
             stepsdefinitions[hash]['hash'] = hash;
             this.list[hash] = new STEP_DEFINITION(stepsdefinitions[hash]);
@@ -809,15 +816,9 @@ STEP_DEFINITIONS_LIST.prototype = {
             //M.tool_behateditor.add_status_message('Can not parse empty step', 'warning');
             return null;
         }
-        if (lines.length > 1) {
+        if (lines.length > 1 && !this.list['000'].match_step(text)) {
             //M.tool_behateditor.add_status_message('Can not parse multiline step (yet)<br><span="stepregex">'+
             //        lines[0]+'</span>', 'notification', 2000);
-            return null;
-            // TODO tables!
-        }
-        if (!lines[0].match(/^ *(And|Given|Then|When) /)) {
-            //M.tool_behateditor.add_status_message('Can not parse step: first word must be And|Given|Then|When<br><span="stepregex">'+
-            //        lines[0]+'</span>', 'warning');
             return null;
         }
         for (i in this.list) {
@@ -861,7 +862,7 @@ STEP_DEFINITION.prototype = {
     path : null,
     lines : null,
     fullregex : null,
-    steptext : null,
+    steptext : '',
     //params : null,
     multiline : false,
     /**
@@ -931,6 +932,9 @@ STEP_DEFINITION.prototype = {
      * @returns {Array}|false
      */
     match_step : function(str) {
+        if (!str.match(/^\s*(Given|When|Then|And) /)) {
+            return null;
+        }
         var lines = str.replace(/[\s\n]+$/,'').replace(/^\n+/,'').split(/\n/),
                 firstwordarray = lines[0].trim().match(/^(\w+) /),
                 firstword = firstwordarray[1],
@@ -1028,6 +1032,85 @@ STEP_DEFINITION.prototype = {
 
 Y.extend(STEP_DEFINITION, Y.Base, STEP_DEFINITION.prototype, {
     NAME : 'moodle-tool_behateditor-stepdefinition'
+});
+
+/**
+ * Properties and methods of one step definition
+ */
+var STEP_DEFINITION_TABLE = function() {
+    STEP_DEFINITION_TABLE.superclass.constructor.apply(this, arguments);
+};
+
+STEP_DEFINITION_TABLE.prototype = {
+/*    hash : null,
+    steptype : null,
+    stepdescription : null,
+    keywords : [],
+    component : null,
+    functionname : null,
+    path : null,
+    lines : null,
+    fullregex : null,
+    steptext : null,
+    //params : null,
+    multiline : false,*/
+    /**
+     * Called during the initialisation process of the object.
+     * @method initializer
+     */
+    /*initializer : function(data) {
+        this.hash = data.hash;
+        this.steptext = '';
+    },*/
+    /**
+     * Matches the real step wording to the current definition and returns array of matches or false if matching failed.
+     * First element in the returned array is a steptype (Given|When|Then|And), others are step parameters.
+     *
+     * @param {String} str
+     * @returns {Array}|false
+     */
+    match_step : function(str) {
+        if (str.match(/^\s*\|.*\|/)) {
+            return true;
+        }
+        return null;
+    },
+    get_new_step_text : function() {
+        return '      |  |  |';
+    },
+    display_in_search_results : function() {
+        return null;
+    },
+    display_in_search_details : function() {
+        return null;
+    },
+    has_any_keyword : function() {
+        return false;
+    },
+    /**
+     * Converts from editor to sourcecode
+     *
+     * @param {Node} editornode
+     * @returns {String}
+     */
+    convert_from_editor_to_source : function(editornode) {
+        return editornode.one('textarea').get('value');
+    },
+    /**
+     * Converts from sourcecode to editor
+     * @param {String} src
+     * @returns {Node}
+     */
+    convert_from_sourcecode_to_editor : function(src, editornode) {
+        editornode.setContent('');
+        editornode.setAttribute('data-hash', this.hash);
+        editornode.append('<textarea class="skiptextarea">'+src+'</textarea>');
+        return editornode;
+    }
+};
+
+Y.extend(STEP_DEFINITION_TABLE, STEP_DEFINITION, STEP_DEFINITION_TABLE.prototype, {
+    NAME : 'moodle-tool_behateditor-stepdefinitiontable'
 });
 
 }, '@VERSION@', { requires: ['base', 'io-base', 'node', 'node-data', 'array-extras', 'event-valuechange', 'event-resize', 'json-parse', 'overlay', 'moodle-core-notification'] });
