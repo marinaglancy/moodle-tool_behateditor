@@ -161,57 +161,72 @@ M.tool_behateditor = {
         M.tool_behateditor.resize_window();
     },
 
-    convert_from_source_to_editor : function() {
+    split_source_in_chunks : function() {
         var source = Y.one('#behateditor_featuresource').get('value'),
-                chunks = source.trim().split(/\n[\t\s]*\n/), i, chunkheader, fieldset, chunkcontents,
-                targetdiv = Y.one('#behateditor_featureedit .content-editor'),
-                nextline, steps;
-        targetdiv.setContent('');
+                lines = source.trim().split(/\n/), i, chunks = [], type,
+                instring = false, fieldsets = [];
+        for (i in lines) {
+            type = 'unknown'; // Usually empty line or comment or an error.
+            if (lines[i].match(/^\s*\@/)) {
+                type = 'header';
+            } else if (lines[i].match(/^\s*\|.*\|\s*$/)) {
+                type = 'table';
+            } else if (lines[i].match(/^\s*(Given|When|Then|And) /)) {
+                type = 'step';
+            } else if (lines[i].match(/^\s*(Feature|Background|Scenario|Scenario Outline|Examples):/)) {
+                type = 'header';
+            } else if (lines[i].trim() === '"""') {
+                type = 'stringdelimiter';
+            } else if (lines[i].trim().length === 0) {
+                type = 'emptyline';
+            }
+            if (instring) {
+                chunks[chunks.length-1][1] += "\n" + lines[i];
+                if (type === 'stringdelimiter') {
+                    instring = false;
+                }
+            } else if (type === 'stringdelimiter') {
+                chunks.push(['string', lines[i]]);
+                instring = true;
+            } else if ((type !== 'step') && chunks.length && chunks[chunks.length-1][0] === type) {
+                chunks[chunks.length-1][1] += "\n" + lines[i];
+            } else {
+                chunks.push([type, lines[i]]);
+            }
+        }
         for (i in chunks) {
+            if (chunks[i][0] === 'header' || !fieldsets.length) {
+                fieldsets.push([chunks[i]]);
+            } else {
+                fieldsets[fieldsets.length-1].push(chunks[i]);
+            }
+        }
+        return fieldsets;
+    },
+
+    convert_from_source_to_editor : function() {
+        var i, chunkheader, fieldset, chunkcontents,
+                targetdiv = Y.one('#behateditor_featureedit .content-editor'),
+                fieldsets = M.tool_behateditor.split_source_in_chunks(), j, type, chunk;
+
+        targetdiv.setContent('');
+        for (i in fieldsets) {
             fieldset = Y.Node.create('<fieldset class="collapsible"></fieldset>');
             chunkcontents = Y.Node.create('<div class="fcontainer clearfix"></div>');
-            if (i > 0) {
-                // To create an empty line between chunks on re-parsing.
-                chunkcontents.append('<div class="hiddenifjs"><textarea></textarea></div>');
-            }
-            var lines = chunks[i].replace(/\s+\n/g,"\n").replace(/^\n+/,'').replace('/\n+$/','').split(/\n/);
-            if ((lines.length > 0 && lines[0].match(/^ *(Background|Scenario|Scenario Outline|Examples):/)) ||
-                    (lines.length > 1 && lines[0].match(/^  \@/) && lines[1].match(/^ *(Background|Scenario|Scenario Outline):/))) {
-                var jsprefix = '';
-                if (lines[0].match(/^  \@/)) {
-                    jsprefix = lines.shift();
-                    chunkcontents.append('<div class="hiddenifjs"><textarea>'+jsprefix+'</textarea></div>');
-                }
-                chunkheader = lines.shift();
-                chunkcontents.append('<div class="hiddenifjs"><textarea>'+chunkheader+'</textarea></div>');
-                if (jsprefix !== '') {
-                    chunkheader = '<span class="jsprefix">'+jsprefix.trim()+'</span> ' + chunkheader;
-                }
-                steps = [];
-                while (lines.length > 0) {
-                    nextline = lines.shift();
-                    if (nextline.match(/^     /) && steps.length > 0) {
-                        steps[steps.length-1] += "\n" + nextline;
-                    } else {
-                        steps.push(nextline);
+            chunkheader = 'Unrecognised block';
+            for (j in fieldsets[i]) {
+                type = fieldsets[i][j][0];
+                chunk = fieldsets[i][j][1];
+                if (type === 'header' || type === 'emptyline') {
+                    chunkcontents.append('<div class="hiddenifjs"><textarea>'+
+                            chunk.replace('<', '&lt;')+'</textarea></div>');
+                    if (type === 'header') {
+                        chunkheader = chunk.replace(/^\s*(\@.*)\n/, '<span class="jsprefix">$1</span> ');
                     }
-                }
-                for (j in steps) {
-                    chunkcontents.append(M.tool_behateditor.feature_step_node(steps[j]));
-                }
-                chunkcontents.append(M.tool_behateditor.feature_step_node(null, true));
-                fieldset.addClass('featuresteps');
-            } else {
-                if (i > 0) {
-                    chunkheader = 'Unrecognised block';
-                    fieldset.addClass('unrecognised');
                 } else {
-                    chunkheader = 'Header';
-                    fieldset.addClass('featureheader');
+                    // Treat as step (even though it might be step, string, table, unknown).
+                    chunkcontents.append(M.tool_behateditor.feature_step_node(chunk));
                 }
-                fieldset.addClass('collapsed');
-                chunkcontents.append('<textarea rows="'+chunks[i].split(/\n/).length+'" cols="60">'+
-                        chunks[i].replace('<', '&lt;')+'</textarea>');
             }
             fieldset.append('<legend class="ftoggler">'+chunkheader+'</legend>');
             fieldset.append(chunkcontents);
@@ -528,9 +543,14 @@ M.tool_behateditor = {
             return;
         }
         if (M.tool_behateditor.stepsdefinitions.get(hash)) {
-            var src = M.tool_behateditor.stepsdefinitions.get(hash).get_new_step_text();
-            var node = M.tool_behateditor.feature_step_node(src);
+            var step = M.tool_behateditor.stepsdefinitions.get(hash),
+                src = step.get_new_step_text(),
+                node = M.tool_behateditor.feature_step_node(src);
             tempnode.get('parentNode').insertBefore(node, tempnode);
+            if (step.multiline) {
+                var tnode = M.tool_behateditor.feature_step_node('      |  |  |');
+                tempnode.get('parentNode').insertBefore(tnode, tempnode);
+            }
             M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: node.one('.stepcontrols .stepaction-editor')});
             M.tool_behateditor.mark_node_as_just_added(node);
         }
@@ -586,6 +606,7 @@ M.tool_behateditor = {
             container.append(M.tool_behateditor.stepsdefinitions.get(hashes[i]).display_in_search_results());
             container.removeClass('empty');
         }
+        Y.all('#behateditor_searchdetails').addClass('hiddenifjs');
     },
 
     process_request_result : function(id, o, p) {
@@ -785,18 +806,18 @@ STEP_DEFINITIONS_LIST.prototype = {
         var hash = null, i,
                 lines = text.replace(/[\s\n]+$/,'').replace(/^\n+/,'').split(/\n/)
         if (!lines.length) {
-            M.tool_behateditor.add_status_message('Can not parse empty step', 'warning');
+            //M.tool_behateditor.add_status_message('Can not parse empty step', 'warning');
             return null;
         }
         if (lines.length > 1) {
-            M.tool_behateditor.add_status_message('Can not parse multiline step (yet)<br><span="stepregex">'+
-                    lines[0]+'</span>', 'notification', 2000);
+            //M.tool_behateditor.add_status_message('Can not parse multiline step (yet)<br><span="stepregex">'+
+            //        lines[0]+'</span>', 'notification', 2000);
             return null;
             // TODO tables!
         }
         if (!lines[0].match(/^ *(And|Given|Then|When) /)) {
-            M.tool_behateditor.add_status_message('Can not parse step: first word must be And|Given|Then|When<br><span="stepregex">'+
-                    lines[0]+'</span>', 'warning');
+            //M.tool_behateditor.add_status_message('Can not parse step: first word must be And|Given|Then|When<br><span="stepregex">'+
+            //        lines[0]+'</span>', 'warning');
             return null;
         }
         for (i in this.list) {
@@ -805,14 +826,14 @@ STEP_DEFINITIONS_LIST.prototype = {
                     hash = i;
                 } else {
                     M.tool_behateditor.add_status_message('Can not parse step: More than one definition match<br><span="stepregex">'+
-                    lines[0]+'</span>', 'warning');
+                    lines[0].replace('<', '&lt;')+'</span>', 'warning');
                     return null;
                 }
             }
         }
         if (hash === null) {
             M.tool_behateditor.add_status_message('Can not parse step: No matching definition found<br><span="stepregex">'+
-                    lines[0]+'</span>', 'warning');
+                    lines[0].replace('<', '&lt;')+'</span>', 'warning');
             return null;
         }
         return this.list[hash];
