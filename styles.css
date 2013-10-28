@@ -252,6 +252,23 @@ form#behateditor_searchform
     color: #1467a6;
 }
 
+.path-admin-tool-behateditor .steptablenode .toggletableedit {
+    color: #888;
+}
+
+.path-admin-tool-behateditor .stepeditor table.steptablenode td.controls {
+    display: none;
+}
+
+.path-admin-tool-behateditor .stepeditor.showcontrols table.steptablenode td.controls {
+    display: table-cell;
+}
+
+.path-admin-tool-behateditor .steptablenode td {
+    margin: 0;
+    padding: 0;
+}
+
 .path-admin-tool-behateditor .featurefileslist {
     max-height: 420px;
     overflow: auto;

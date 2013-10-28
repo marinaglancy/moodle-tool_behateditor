@@ -103,6 +103,10 @@ M.tool_behateditor = {
         Y.one('#behateditor_featureedit').delegate('valuechange',
             function(){M.tool_behateditor.set_feature_can_be_saved(true);},
             'input,textarea,select');
+        // Add table column or row
+        Y.one('#behateditor_featureedit').delegate('click',
+            M.tool_behateditor.click_add_table_row_or_column,
+            '.steptablenode .tableaction');
         M.tool_behateditor.set_feature_contents('', null, false);
     },
 
@@ -254,6 +258,17 @@ M.tool_behateditor = {
         sourcecode.set('value', str);
     },
 
+    click_add_table_row_or_column : function(e) {
+        // TODO move to table class somehow?
+        e.preventDefault();
+        var stepel = e.currentTarget.ancestor('.step.stepmode-editor');
+        M.tool_behateditor.make_step_definition(stepel);
+        var textarea = stepel.one('.stepsource textarea'), src = textarea.get('value');
+        src = M.tool_behateditor.stepsdefinitions.get('000').table_action(e, src);
+        textarea.set('value', src);
+        M.tool_behateditor.parse_step_definition(stepel);
+    },
+
     get_feature_contents : function() {
         if (Y.one('#behateditor_featureedit .featureedit').getAttribute('data-mode') === 'editor') {
             M.tool_behateditor.convert_from_editor_to_source();
@@ -286,7 +301,7 @@ M.tool_behateditor = {
                 sourcecodenode = stepel.one('.stepsource textarea'),
                 hash = editornode.getAttribute('data-hash'),
                 stepdef = M.tool_behateditor.stepsdefinitions.get(hash);
-        sourcecodenode.set('value', stepdef.convert_from_editor_to_source(editornode));
+        sourcecodenode.set('value', stepdef.convert_from_editor_to_source(editornode, sourcecodenode.get('value')));
     },
 
     parse_step_definition : function(stepel) {
@@ -549,12 +564,15 @@ M.tool_behateditor = {
                 src = step.get_new_step_text(),
                 node = M.tool_behateditor.feature_step_node(src);
             tempnode.get('parentNode').insertBefore(node, tempnode);
-            if (step.multiline) {
-                var tnode = M.tool_behateditor.feature_step_node('      |  |  |');
-                tempnode.get('parentNode').insertBefore(tnode, tempnode);
-            }
             M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: node.one('.stepcontrols .stepaction-editor')});
             M.tool_behateditor.mark_node_as_just_added(node);
+            if (step.multiline) {
+                var tsrc = M.tool_behateditor.stepsdefinitions.get('000').get_new_step_text(),
+                    tnode = M.tool_behateditor.feature_step_node(tsrc);
+                tempnode.get('parentNode').insertBefore(tnode, tempnode);
+                M.tool_behateditor.click_feature_editor_stepcontrol({currentTarget: tnode.one('.stepcontrols .stepaction-editor')});
+                M.tool_behateditor.mark_node_as_just_added(tnode);
+            }
         }
         tempnode.remove();
     },
@@ -963,9 +981,10 @@ STEP_DEFINITION.prototype = {
      * Converts from editor to sourcecode
      *
      * @param {Node} editornode
+     * @param {String} originalsrc
      * @returns {String}
      */
-    convert_from_editor_to_source : function(editornode) {
+    convert_from_editor_to_source : function(editornode, originalsrc) {
         // TODO!
         var steptype = editornode.one('.steptype .iscurrent').getAttribute('data-steptype'),
                 node = Y.Node.create('<div></div>');
@@ -1070,13 +1089,26 @@ STEP_DEFINITION_TABLE.prototype = {
      * @returns {Array}|false
      */
     match_step : function(str) {
-        if (str.match(/^\s*\|.*\|/)) {
-            return true;
+        if (!str.match(/^\s*\|.*\|/)) {
+            return null;
         }
-        return null;
+        var lines = str.replace(/[\s\n]+$/).split(/\n/);
+        var chunks = [];
+        for (i in lines) {
+            if (!lines[i].match(/^\s*\|.*\|\s*$/)) {
+                return null;
+            }
+            var thischunks = lines[i].replace(/(^\s*\||\|\s*$)/g,'').split(/\|/);
+            if (chunks.length && thischunks.length !== chunks[chunks.length-1].length) {
+                // Different number of columns comparing to the previous row
+                return null;
+            }
+            chunks.push(thischunks);
+        }
+        return chunks;
     },
     get_new_step_text : function() {
-        return '      |  |  |';
+        return '      |  |  |'+"\n"+'      |  |  |';
     },
     display_in_search_results : function() {
         return null;
@@ -1087,14 +1119,43 @@ STEP_DEFINITION_TABLE.prototype = {
     has_any_keyword : function() {
         return false;
     },
+    _transpose : function(a) {
+        return Object.keys(a[0]).map(
+            function (c) { return a.map(function (r) { return r[c]; }); }
+        );
+    },
+    _make_source_from_array : function(chunks, originalsrc) {
+        var max_length = function(a) { return Math.max.apply(Math, a.map(function(e){return e.trim().length;})); },
+            cwidth = this._transpose(chunks).map(function(a){return max_length(a);}),
+            repeat_str = function(str, l) { return (new Array(l+1)).join(str); };
+        chunks = chunks.map(function(a) {
+            return a.map(function(e,i) {e=e.trim(); return ' '+e+repeat_str(' ', cwidth[i]-e.length+1);});
+        });
+        src = chunks.map(function(a){ return '      |'+a.join('|')+'|'; }).join("\n");
+        return src;
+    },
     /**
      * Converts from editor to sourcecode
      *
      * @param {Node} editornode
+     * @param {String} originalsrc
      * @returns {String}
      */
-    convert_from_editor_to_source : function(editornode) {
-        return editornode.one('textarea').get('value');
+    convert_from_editor_to_source : function(editornode, originalsrc) {
+        var table = editornode.one('table');
+        if (table.getAttribute('data-modified') === '0') {
+            return originalsrc;
+        }
+        var rows = table.getAttribute('data-rows'),
+                columns = table.getAttribute('data-columns'),
+                i, j, chunks = [];
+        for (i=0;i<rows;i++) {
+            chunks.push([]);
+            for (j=0;j<columns;j++) {
+                chunks[i].push(table.one('td[data-row="'+i+'"][data-column="'+j+'"] input').get('value'));
+            }
+        }
+        return this._make_source_from_array(chunks, originalsrc);
     },
     /**
      * Converts from sourcecode to editor
@@ -1104,8 +1165,141 @@ STEP_DEFINITION_TABLE.prototype = {
     convert_from_sourcecode_to_editor : function(src, editornode) {
         editornode.setContent('');
         editornode.setAttribute('data-hash', this.hash);
-        editornode.append('<textarea class="skiptextarea">'+src+'</textarea>');
+        var chunks = this.match_step(src), i,
+            table = Y.Node.create('<table class="steptablenode hidecontrols"></table>');
+        table.setAttribute('data-modified', '0');
+        table.setAttribute('data-rows', chunks.length);
+        table.setAttribute('data-columns', chunks[0].length);
+        var tablecell = function(content, attributes) {
+            var td = Y.Node.create('<td></td>');
+            if (attributes) {
+                for (var i in attributes) { td.setAttribute(i, attributes[i]); }
+            }
+            td.append(content);
+            return td;
+        }, control = function(action, idx) {
+            var fixtures = {
+                plusrow: {title: 'Add table row', text: '+'},
+                pluscolumn: {title: 'Add table column', text: '+'},
+                deleterow: {title: 'Delete table row', text: '-'},
+                deletecolumn: {title: 'Delete table column', text: '-'},
+                moveup: {title: 'Move row up', text: '^'},
+                movedown: {title: 'Move row down', text: 'v'},
+                moveright: {title: 'Move column right', text: '&gt;'},
+                moveleft: {title: 'Move column left', text: '&lt;'},
+                fixtable: {title: 'Remove empty rows and columns', text: 'Fix'}
+            };
+            return '<a href="#" class="tableaction '+action+'" data-action="'+action+'" data-idx="'+idx+'" title="'+fixtures[action].title+'">'+
+                    fixtures[action].text+'</a> ';
+        }, tablecell_columncontrols = function(idx, columnscount) {
+            var content = control('pluscolumn', idx);
+            if (idx>0 && idx<columnscount) { content += control('moveleft', idx); }
+            if (idx<columnscount) { content += control('deletecolumn', idx); }
+            if (idx<columnscount-1) { content += control('moveright', idx); }
+            return tablecell(content, {class:'controls'});
+        }, tablecell_rowcontrols = function(idx, rowscount) {
+            var content = control('plusrow', idx);
+            if (idx>0 && idx<rowscount) { content += control('moveup', idx); }
+            if (idx<rowscount) { content += control('deleterow', idx); }
+            if (idx<rowscount-1) { content += control('movedown', idx); }
+            return tablecell(content, {class:'controls'});
+        }, tablecell_input = function(irow, icolumn) {
+            var input = Y.Node.create('<input type="text" size="20"/>');
+            input.set('value', chunks[irow][icolumn].trim());
+            return tablecell(input, {'data-row': irow, 'data-column': icolumn});
+        }, tablerow = function(elementfirst, elements, elementlast) {
+            var tr = Y.Node.create('<tr></tr>');
+            tr.append(elementfirst);
+            for (var idx in elements) { tr.append(elements[idx]); }
+            tr.append(elementlast);
+            return tr;
+        };
+        for (i in chunks) {
+            if (i==0) {
+                var prefix = '<td valign="top" rowspan="'+(chunks.length+2)+'"><a href="#" class="toggletableedit" title="Toggle table edit controls">'+
+                    'C'+'</a> </td>'
+                table.append(tablerow(prefix + '<td class="controls"></td>',
+                    chunks[0].map(function(e,j){return tablecell_columncontrols(j, chunks[0].length);}),
+                    tablecell_columncontrols(chunks[0].length, chunks[0].length)
+                ));
+            }
+            table.append(tablerow(tablecell_rowcontrols(i, chunks.length),
+                chunks[i].map(function(e,j){return tablecell_input(i, j);}),
+                tablecell('', {class:'controls'})
+            ));
+        }
+        table.append(tablerow(tablecell_rowcontrols(chunks.length, chunks.length),
+            chunks[0].map(function(e,j){return tablecell('', {class:'controls'});}),
+            tablecell(control('fixtable', 0), {class:'controls'})
+        ));
+        editornode.append(table);
+        table.delegate(
+            'valuechange', function(e) { table.setAttribute('data-modified', '1'); },
+            'input');
+        table.one('.toggletableedit').on('click', function(e) {
+            var editor = table.ancestor('.stepeditor');
+            if (editor.hasClass('showcontrols')) {
+                editor.removeClass('showcontrols');
+            } else {
+                editor.addClass('showcontrols');
+            }
+        });
         return editornode;
+    },
+    table_action : function(e, src) {
+        var action = e.currentTarget.getAttribute('data-action'),
+            idx = parseFloat(e.currentTarget.getAttribute('data-idx')),
+            chunks = this.match_step(src),
+            swapelements = function(A, x, y) {
+                var tmp = A[x];
+                A[x] = A[y];
+                A[y] = tmp;
+                return A;
+            };
+        //console.log(src)
+        if (action === 'plusrow') {
+            // Add a row
+            chunks.splice(idx, 0, (new Array(chunks[0].length)).join(',').split(/,/));
+        } else if (action === 'deleterow') {
+            // Delete a row
+            if (chunks.length == 1) {
+                chunks = [['']];
+            } else {
+                chunks.splice(idx, 1);
+            }
+        } else if (action === 'moveup') {
+            // Move row up
+            chunks = swapelements(chunks, idx-1, idx);
+        } else if (action === 'movedown') {
+            // Move row down
+            chunks = swapelements(chunks, idx, idx+1);
+        } else if (action === 'pluscolumn') {
+            // Add a column
+            chunks = chunks.map(function(e) {e.splice(idx, 0, ''); return e;});
+        } else if (action === 'deletecolumn') {
+            // Delete a column
+            if (chunks[0].length == 1) {
+                chunks = [['']];
+            } else {
+                chunks = chunks.map(function(e) {e.splice(idx, 1); return e;});
+            }
+        } else if (action === 'moveright') {
+            // Move column right
+            chunks = chunks.map(function(a) {return swapelements(a, idx, idx+1);});
+        } else if (action === 'moveleft') {
+            // Move column right
+            chunks = chunks.map(function(a) {return swapelements(a, idx-1, idx);});
+        } else if (action === 'fixtable') {
+            // Remove empty rows and columns.
+            var filter_nonempty_rows = function(a) {
+                var b = a.filter(function(e) {return e.join('').trim() !== '';});
+                return (b.length == 0) ? [['']] : b;
+            };
+            chunks = this._transpose(filter_nonempty_rows(this._transpose(filter_nonempty_rows(chunks))));
+        } else {
+            return src;
+        }
+        return this._make_source_from_array(chunks, src);
     }
 };
 
