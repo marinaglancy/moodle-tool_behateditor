@@ -23,3 +23,4 @@
  */
 
 $string['pluginname'] = 'Behat feature editor';
+$string['cachedef_stepdef'] = 'Behat step definitions';
